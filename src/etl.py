@@ -1,6 +1,10 @@
 import requests
+import os
+import os
+from dotenv import load_dotenv
 
-api_key = "RGAPI-3121abc4-7bd3-45e9-9850-a43a048de154"
+load_dotenv()
+api_key = os.getenv("API_KEY")
 
 class Extract:
 
