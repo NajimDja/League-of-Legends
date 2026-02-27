@@ -3,6 +3,11 @@ import json
 
 class ExtractChampionData:
 
+    def get_latest_version(self):
+        versions = requests.get("https://ddragon.leagueoflegends.com/api/versions.json").json()
+        latest = versions[0]
+        print(latest)
+
     def get_all_champion(self):
         url = "https://ddragon.leagueoflegends.com/cdn/16.4.1/data/fr_FR/champion.json"
         resp = requests.get(url).json()
@@ -15,5 +20,6 @@ class ExtractChampionData:
         with open(r"C:\Users\najim\Documents\Projets\LeagueOfLegends\images\Aatrox.png", "wb") as file:
             file.write(resp.content)
 
+ExtractChampionData().get_latest_version()
 # ExtractChampionData().get_all_champion()
-ExtractChampionData().get_image_champion()
+# ExtractChampionData().get_image_champion()
