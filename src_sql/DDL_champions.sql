@@ -1,3 +1,7 @@
+-------------------------------
+-- TABLES CHAMPIONS
+-------------------------------
+
 -- Schéma de la table champion
 
 CREATE TABLE champion (
