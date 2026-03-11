@@ -1,15 +1,9 @@
 import requests
-from datetime import datetime
-import os
-from dotenv import load_dotenv
+import numpy as np
 import pandas as pd
-import json
 import re
-import html
-load_dotenv()
-api_key = os.getenv("API_KEY")
 
-class ExtractChampionData:
+class ExtractDdragonData:
 
     def __init__(self):
         self.last_version = self.get_latest_version()
@@ -21,7 +15,6 @@ class ExtractChampionData:
         url = "https://ddragon.leagueoflegends.com/api/versions.json"
         rep = requests.get(url).json()
         latest = rep[0]
-        print(latest)
         return latest
 
     def get_all_champ_general_data(self):
@@ -38,6 +31,12 @@ class ExtractChampionData:
             resp = requests.get(url).json()['data']
             data.append(resp[champ])
         return data
+    
+    def get_runes(self):
+        """Get the runes data"""
+        url = f"https://ddragon.leagueoflegends.com/cdn/{self.last_version}/data/fr_FR/runesReforged.json"
+        resp = requests.get(url).json()
+        return resp
 
     # def download_all_png_champion(self):
     #     """Download all champions pictures"""
@@ -49,7 +48,7 @@ class ExtractChampionData:
     #         with open(path_save, "wb") as file:
     #             file.write(resp.content)
 
-class TransformChampionData:
+class TransformDdragonData:
 
     def __init__(self):
         self.keys_to_drop = ['image', 'skins', 'blurb']
@@ -147,7 +146,7 @@ class TransformChampionData:
             spells = self.pop_key(
                 spells,
                 key_to_remove=['leveltip', 'description', 'cooldown', 'cost', 'datavalues',
-                    'effect', 'vars', 'image', 'effectBurn', 'range'])
+                    'effect', 'vars', 'image', 'effectBurn', 'range', 'resource'])
 
             spells_clean = self.text_cleaning(spells, 'tooltip')
             spells_clean = self.text_cleaning(spells, 'name')
@@ -174,19 +173,49 @@ class TransformChampionData:
         df_merge = df_merge.drop(columns=['name', 'id'])
         df_merge = df_merge.rename(columns={'key':'champ_id'})
         df_merge = df_merge[['champ_id', 'spell_id', 'spell_name', 'tooltip', 'maxrank', 'cooldownBurn', 'costBurn', 
-                             'costType', 'maxammo', 'rangeBurn', 'resource', 'spell_rank']]
+                             'costType', 'maxammo', 'rangeBurn', 'spell_rank', 'version']]
         return df_merge
         
+    def correct_spell_costype(self, df_spells : pd.DataFrame, df_champ : pd.DataFrame) -> pd.DataFrame:
+        """Rectifie les resources consommées de chaque spells"""
 
-    def transform_to_df(self, data : list) -> pd.DataFrame:
+        df_merge = pd.merge(df_spells, df_champ[['key', 'partype']], left_on='champ_id', right_on='key')
+
+        df_merge['costType'] = df_merge['costType'].str.strip()
+
+        df_merge['costType'] = np.where(
+            df_merge['costType'] == r"{{ abilityresourcename }}", 
+            df_merge['partype'], 
+            df_merge['costType'])
+        
+        expression = r"\(?\{\{.*?\}\}\)?|\+|\."
+        df_merge["costType"] = df_merge["costType"]\
+            .str.replace(expression, "", regex=True)\
+            .str.replace(r"\s+", ' ', regex=True)\
+            .str.lower()
+
+        return df_merge.drop(columns=['key', 'partype'])
+
+    def transform_to_df(self, data : list, version : str) -> pd.DataFrame:
         """Transforme une liste de dictionnaire en dataframe pandas"""
-        return pd.DataFrame(data)
+        data = pd.DataFrame(data)
+        data['version'] = version
+        return data
+
+
+class LoadDdragonData:
+
+    def insert_data(self):
+        pass
+
 
 def pipeline_champion():
     """Pipeline d'application des méthodes d'extraction, de transformation et de chargement"""
     
-    extract = ExtractChampionData()
-    transform = TransformChampionData()
+    extract = ExtractDdragonData()
+    lastest_version = extract.last_version
+    print("Lastest version :", lastest_version)
+    transform = TransformDdragonData()
 
     details = extract.get_details_champ_data()
     details = transform.drop_keys(details)
@@ -209,17 +238,17 @@ def pipeline_champion():
     table_champ_stats = transform.dict_into_first_level(table_champ_stats, key_to_flat='stats')
     table_champ_stats, table_champ_stats_up = transform.split_stats(table_champ_stats)
 
-    table_champ_spells = transform.pop_key(table_champ_spells, key_to_remove= ['leveltip', 'description', 'cooldown', 'cost', 'datavalues', 'effect', 'vars', 'image', 'effectBurn', 'range'])
     table_champ_spells = transform.clean_spells_data(table_champ_spells)
 
-    table_champion = transform.transform_to_df(table_champion)
-    table_champ_info = transform.transform_to_df(table_champ_info)
-    table_champ_passive = transform.transform_to_df(table_champ_passive)
-    table_champ_stats = transform.transform_to_df(table_champ_stats)
-    table_champ_stats_up = transform.transform_to_df(table_champ_stats_up)
-    table_champ_spells = transform.transform_to_df(table_champ_spells)
+    table_champion = transform.transform_to_df(table_champion, version=lastest_version)
+    table_champ_info = transform.transform_to_df(table_champ_info, version=lastest_version)
+    table_champ_passive = transform.transform_to_df(table_champ_passive, version=lastest_version)
+    table_champ_stats = transform.transform_to_df(table_champ_stats, version=lastest_version)
+    table_champ_stats_up = transform.transform_to_df(table_champ_stats_up, version=lastest_version)
+    table_champ_spells = transform.transform_to_df(table_champ_spells, version=lastest_version)
 
     table_champ_spells = transform.correct_spell_name(table_champ_spells, table_champion)
+    table_champ_spells = transform.correct_spell_costype(table_champ_spells, table_champion)
     
     return table_champion, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up
 

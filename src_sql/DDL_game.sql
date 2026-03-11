@@ -79,3 +79,16 @@ CREATE TABLE ranked (
         FOREIGN KEY (puuid) REFERENCES account(puuid)
         ON DELETE CASCADE
 );
+
+-- Schéma de la table runes
+
+CREATE TABLE runes (
+    type_rune_id INTEGER,
+    type_rune	TEXT,
+    child_rune_id	INTEGER,
+    name	TEXT,
+    description TEXT,
+    version TEXT,
+    CONSTRAINT pk_runes
+        PRIMARY KEY (type_rune_id, child_rune_id)
+);
