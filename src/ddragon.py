@@ -2,8 +2,9 @@ import requests
 import numpy as np
 import pandas as pd
 import re
+import os
 
-class ExtractDdragonData:
+class ExtractChampionData:
 
     def __init__(self):
         self.last_version = self.get_latest_version()
@@ -48,7 +49,7 @@ class ExtractDdragonData:
     #         with open(path_save, "wb") as file:
     #             file.write(resp.content)
 
-class TransformDdragonData:
+class TransformChampionData:
 
     def __init__(self):
         self.keys_to_drop = ['image', 'skins', 'blurb']
@@ -137,6 +138,9 @@ class TransformDdragonData:
             clean.append(champ)
         return clean
     
+    def rename_cols(self, df : pd.DataFrame, rename : dict) -> pd.DataFrame:
+        return df.rename(columns=rename)
+
     def clean_spells_data(self, data: list):
         new_data = []
         for champ in data:
@@ -173,7 +177,7 @@ class TransformDdragonData:
         df_merge = df_merge.drop(columns=['name', 'id'])
         df_merge = df_merge.rename(columns={'key':'champ_id'})
         df_merge = df_merge[['champ_id', 'spell_id', 'spell_name', 'tooltip', 'maxrank', 'cooldownBurn', 'costBurn', 
-                             'costType', 'maxammo', 'rangeBurn', 'spell_rank', 'version']]
+                             'costType', 'maxammo', 'rangeBurn', 'spell_rank', 'patch_id']]
         return df_merge
         
     def correct_spell_costype(self, df_spells : pd.DataFrame, df_champ : pd.DataFrame) -> pd.DataFrame:
@@ -199,28 +203,53 @@ class TransformDdragonData:
     def transform_to_df(self, data : list, version : str) -> pd.DataFrame:
         """Transforme une liste de dictionnaire en dataframe pandas"""
         data = pd.DataFrame(data)
-        data['version'] = version
+        data['patch_id'] = int(re.sub(r'[^0-9]', "", version))
         return data
+    
+    def transform_runes(self, data : list, version : str) -> pd.DataFrame:
+        """Récupérer les runes et transforme en dataframe pandas"""
+        df_runes = pd.DataFrame(data)\
+            .drop(columns=['icon', 'key'])\
+            .rename(columns={'id' : 'type_rune_id', 'name':'type_name'})
+        
+        df_slots = df_runes.explode('slots').reset_index(drop=True)
 
+        df_slots = pd.concat([
+            df_slots.drop(columns=['slots']), 
+            pd.json_normalize(df_slots['slots'])], 
+            axis=1)
 
-class LoadDdragonData:
-
-    def insert_data(self):
-        pass
+        df_runes = df_slots.explode('runes').reset_index(drop=True)
+        
+        df_runes = pd.concat([
+            df_runes.drop(columns=['runes']), 
+            pd.json_normalize(df_runes['runes'])], 
+            axis=1)
+        
+        df_runes = df_runes\
+            .rename(columns={'id':'child_rune_id', 'longDesc' : 'description'})\
+            .drop(columns=['icon', 'key', 'shortDesc'])
+        
+        df_runes['description'] = [self._clean_text(x).strip() for x in df_runes['description']]
+        df_runes['patch_id'] = re.sub(r"[^0-9]", "", version)
+        
+        return df_runes
 
 
 def pipeline_champion():
     """Pipeline d'application des méthodes d'extraction, de transformation et de chargement"""
     
-    extract = ExtractDdragonData()
+    extract = ExtractChampionData()
     lastest_version = extract.last_version
     print("Lastest version :", lastest_version)
-    transform = TransformDdragonData()
+    transform = TransformChampionData()
 
     details = extract.get_details_champ_data()
+    table_runes = extract.get_runes()
     details = transform.drop_keys(details)
     
     table_champion, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats = transform.dispatch_data(details)
+
     
     table_champion = transform.listing_into_text(table_champion, "tags", sep=' / ')
     table_champion = transform.text_cleaning(table_champion, key='lore')
@@ -249,7 +278,19 @@ def pipeline_champion():
 
     table_champ_spells = transform.correct_spell_name(table_champ_spells, table_champion)
     table_champ_spells = transform.correct_spell_costype(table_champ_spells, table_champion)
-    
-    return table_champion, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up
 
-table_champion, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up = pipeline_champion()
+    table_champion_version = table_champion[['key', 'title', 'lore', 'tags', 'partype', 'patch_id']]
+    table_champion = table_champion[['key', 'name']]
+
+    table_runes = transform.transform_runes(table_runes, version=lastest_version)
+
+    table_champion = transform.rename_cols(table_champion, rename={'key':'id'})
+    table_champion_version = transform.rename_cols(table_champion_version, rename={'key':'champ_id'})
+    table_champ_info = transform.rename_cols(table_champ_info, rename={'key':'champ_id'})
+    table_champ_passive = transform.rename_cols(table_champ_passive, rename={'key':'champ_id'})
+    table_champ_stats = transform.rename_cols(table_champ_stats, rename={'key':'champ_id'})
+    table_champ_stats_up = transform.rename_cols(table_champ_stats_up, rename={'key':'champ_id'})
+    
+    return table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes
+
+table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes = pipeline_champion()
