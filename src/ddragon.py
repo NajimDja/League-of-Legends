@@ -175,9 +175,11 @@ class TransformChampionData:
         df_merge['spell_id'] = df_merge['name'] + df_merge['spell_rank'].map(lambda x: letters[x])
         df_merge['spell_rank'] = df_merge['spell_rank'] + 1
         df_merge = df_merge.drop(columns=['name', 'id'])
-        df_merge = df_merge.rename(columns={'key':'champ_id'})
-        df_merge = df_merge[['champ_id', 'spell_id', 'spell_name', 'tooltip', 'maxrank', 'cooldownBurn', 'costBurn', 
-                             'costType', 'maxammo', 'rangeBurn', 'spell_rank', 'patch_id']]
+        df_merge = df_merge.rename(columns={'key':'champ_id', 'cooldownBurn':'cooldown_burn', 
+                                            'costBurn':'cost_burn', 'costType':'cost_type', 'rangeBurn':'range_burn'})
+
+        df_merge = df_merge[['champ_id', 'spell_id', 'spell_name', 'tooltip', 'maxrank', 'cooldown_burn', 'cost_burn', 
+                             'cost_type', 'maxammo', 'range_burn', 'spell_rank', 'patch_id']]
         return df_merge
         
     def correct_spell_costype(self, df_spells : pd.DataFrame, df_champ : pd.DataFrame) -> pd.DataFrame:
@@ -185,15 +187,15 @@ class TransformChampionData:
 
         df_merge = pd.merge(df_spells, df_champ[['key', 'partype']], left_on='champ_id', right_on='key')
 
-        df_merge['costType'] = df_merge['costType'].str.strip()
+        df_merge['cost_type'] = df_merge['cost_type'].str.strip()
 
-        df_merge['costType'] = np.where(
-            df_merge['costType'] == r"{{ abilityresourcename }}", 
+        df_merge['cost_type'] = np.where(
+            df_merge['cost_type'] == r"{{ abilityresourcename }}", 
             df_merge['partype'], 
-            df_merge['costType'])
+            df_merge['cost_type'])
         
         expression = r"\(?\{\{.*?\}\}\)?|\+|\."
-        df_merge["costType"] = df_merge["costType"]\
+        df_merge["cost_type"] = df_merge["cost_type"]\
             .str.replace(expression, "", regex=True)\
             .str.replace(r"\s+", ' ', regex=True)\
             .str.lower()
@@ -205,6 +207,12 @@ class TransformChampionData:
         data = pd.DataFrame(data)
         data['patch_id'] = int(re.sub(r'[^0-9]', "", version))
         return data
+    
+    def patch_table(self, version : str) -> pd.DataFrame:
+        df = [{'id' : int(re.sub(r'[^0-9]', "", version)),
+              'version' : version,
+              'is_latest' : True}]
+        return pd.DataFrame(df)
     
     def transform_runes(self, data : list, version : str) -> pd.DataFrame:
         """Récupérer les runes et transforme en dataframe pandas"""
@@ -284,13 +292,18 @@ def pipeline_champion():
 
     table_runes = transform.transform_runes(table_runes, version=lastest_version)
 
+    table_patch = transform.patch_table(version = lastest_version)
+
     table_champion = transform.rename_cols(table_champion, rename={'key':'id'})
     table_champion_version = transform.rename_cols(table_champion_version, rename={'key':'champ_id'})
     table_champ_info = transform.rename_cols(table_champ_info, rename={'key':'champ_id'})
     table_champ_passive = transform.rename_cols(table_champ_passive, rename={'key':'champ_id'})
     table_champ_stats = transform.rename_cols(table_champ_stats, rename={'key':'champ_id'})
-    table_champ_stats_up = transform.rename_cols(table_champ_stats_up, rename={'key':'champ_id'})
+    table_champ_stats_up = transform.rename_cols(table_champ_stats_up, rename={'key':'champ_id', 'hpperlevel':'hp_up',	'mpperlevel':'mp_up', 'armorperlevel':'armor_up',
+                                                                            'spellblockperlevel':'spellblock_up', 'hpregenperlevel':'hpregen_up', 'mpregenperlevel':'mpregen_up',
+                                                                            'critperlevel':'crit_up', 'attackdamageperlevel':'attackdamage_up',	'attackspeedperlevel':'attackspeed_up'})
     
-    return table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes
+    return table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch
 
-table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes = pipeline_champion()
+if __name__ == "__main__":
+    table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch = pipeline_champion()

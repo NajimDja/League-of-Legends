@@ -5,9 +5,12 @@ Ce projet a pour but de récolter et d'analyser les parties jouées sur le jeu L
 
 ## Les étapes
 
-- [ ] Extraction des données
-- [ ] Transformation des données
-- [ ] Chargement en base de données ou fichiers
+- Extraction, Transformation et Chargement des données
+    - [X] Champions
+    - [ ] Items
+    - [ ] Runes
+    - [ ] Comptes
+    - [ ] Games
 - [ ] Dashboard
 
 ## Le jeu

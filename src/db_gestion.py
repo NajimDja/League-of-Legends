@@ -5,13 +5,11 @@ import pandas as pd
 import os
 from dotenv import load_dotenv
 
-
 load_dotenv()
 database_url = os.getenv("DATABASE_URL")
 engine = create_engine(database_url)
 metadata = MetaData()
 metadata.reflect(bind=engine)  # Charge toutes les tables depuis la DB
-
 
 class DataBaseGestion:
 
@@ -117,12 +115,3 @@ class DataBaseGestion:
             metadata.remove(table)
 
         print(f"Tables supprimées : {table_names}")
-
-
-def pipeline():
-
-    querying = DataBaseGestion()
-
-    querying.get_tables_columns(engine)
-
-pipeline()
