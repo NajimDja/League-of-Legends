@@ -1,4 +1,4 @@
-from sqlalchemy import create_engine, text, Table, MetaData, inspect
+from sqlalchemy import create_engine, text, Table, MetaData, inspect, select, func
 from sqlalchemy.orm import Session
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 import pandas as pd
@@ -115,3 +115,51 @@ class DataBaseGestion:
             metadata.remove(table)
 
         print(f"Tables supprimées : {table_names}")
+
+    def update_patch_latest(self, session: Session) -> None:
+        """
+        Met is_latest=True sur le patch avec l'id le plus élevé,
+        et is_latest=False sur tous les autres.
+        """
+        table = metadata.tables["patch"]
+
+        # Récupère l'id le plus élevé
+        result = session.execute(select(func.max(table.c.id)))
+        max_id = result.scalar()
+
+        if max_id is None:
+            print("La table patch est vide.")
+            return
+
+        # Met tout à False
+        session.execute(
+            table.update().values(is_latest=False)
+        )
+
+        # Met le plus récent à True
+        session.execute(
+            table.update()
+            .where(table.c.id == max_id)
+            .values(is_latest=True)
+        )
+
+        session.commit()
+        print(f"Patch {max_id} défini comme latest.")
+    
+    def get_latest_patch(self, session: Session) -> dict | None:
+        """
+        Retourne le patch avec l'id le plus élevé sous forme de dictionnaire.
+        Retourne None si la table est vide.
+        """
+        table = metadata.tables["patch"]
+
+        result = session.execute(
+            select(table).order_by(table.c.id.desc()).limit(1)
+        )
+        row = result.mappings().first()
+
+        if row is None:
+            print("La table patch est vide.")
+            return None
+
+        return dict(row)

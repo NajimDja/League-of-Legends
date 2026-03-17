@@ -6,21 +6,23 @@ import os
 
 class ExtractChampionData:
 
-    def __init__(self):
-        self.last_version = self.get_latest_version()
+    def __init__(self, version : int):
+        self.version = self.get_latest_version(version)
         self.list_champ = self.get_all_champ_general_data()
         self.list_champ = list(self.list_champ.keys())
 
-    def get_latest_version(self):
+    def get_latest_version(self, version : int):
         """Get the last version of the game"""
         url = "https://ddragon.leagueoflegends.com/api/versions.json"
         rep = requests.get(url).json()
-        latest = rep[0]
-        return latest
+        vers = rep[version]
+        print("Version requêtée :", vers)
+        print("Dernière version disponible :", rep[0])
+        return vers
 
     def get_all_champ_general_data(self):
         """Get the champion data"""
-        url = f"https://ddragon.leagueoflegends.com/cdn/{self.last_version}/data/fr_FR/champion.json"
+        url = f"https://ddragon.leagueoflegends.com/cdn/{self.version}/data/fr_FR/champion.json"
         resp = requests.get(url).json()
         return resp['data']
     
@@ -28,21 +30,21 @@ class ExtractChampionData:
         """Get detail champion data"""
         data = []
         for champ in self.list_champ:
-            url = f"https://ddragon.leagueoflegends.com/cdn/{self.last_version}/data/fr_FR/champion/{champ}.json"
+            url = f"https://ddragon.leagueoflegends.com/cdn/{self.version}/data/fr_FR/champion/{champ}.json"
             resp = requests.get(url).json()['data']
             data.append(resp[champ])
         return data
     
     def get_runes(self):
         """Get the runes data"""
-        url = f"https://ddragon.leagueoflegends.com/cdn/{self.last_version}/data/fr_FR/runesReforged.json"
+        url = f"https://ddragon.leagueoflegends.com/cdn/{self.version}/data/fr_FR/runesReforged.json"
         resp = requests.get(url).json()
         return resp
 
     # def download_all_png_champion(self):
     #     """Download all champions pictures"""
     #     for champ in self.list_champ:
-    #         url = f"https://ddragon.leagueoflegends.com/cdn/{self.last_version}/img/champion/{champ}.png"
+    #         url = f"https://ddragon.leagueoflegends.com/cdn/{self.version}/img/champion/{champ}.png"
     #         path_save = fr"C:\Users\najim\Documents\Projets\LeagueOfLegends\images\{champ}.png"
 
     #         resp = requests.get(url)
@@ -244,12 +246,12 @@ class TransformChampionData:
         return df_runes
 
 
-def pipeline_champion():
+def pipeline_champion(version : int):
     """Pipeline d'application des méthodes d'extraction, de transformation et de chargement"""
     
-    extract = ExtractChampionData()
-    lastest_version = extract.last_version
-    print("Lastest version :", lastest_version)
+    extract = ExtractChampionData(version=version)
+    version_utiliser = extract.version
+
     transform = TransformChampionData()
 
     details = extract.get_details_champ_data()
@@ -277,12 +279,12 @@ def pipeline_champion():
 
     table_champ_spells = transform.clean_spells_data(table_champ_spells)
 
-    table_champion = transform.transform_to_df(table_champion, version=lastest_version)
-    table_champ_info = transform.transform_to_df(table_champ_info, version=lastest_version)
-    table_champ_passive = transform.transform_to_df(table_champ_passive, version=lastest_version)
-    table_champ_stats = transform.transform_to_df(table_champ_stats, version=lastest_version)
-    table_champ_stats_up = transform.transform_to_df(table_champ_stats_up, version=lastest_version)
-    table_champ_spells = transform.transform_to_df(table_champ_spells, version=lastest_version)
+    table_champion = transform.transform_to_df(table_champion, version=version_utiliser)
+    table_champ_info = transform.transform_to_df(table_champ_info, version=version_utiliser)
+    table_champ_passive = transform.transform_to_df(table_champ_passive, version=version_utiliser)
+    table_champ_stats = transform.transform_to_df(table_champ_stats, version=version_utiliser)
+    table_champ_stats_up = transform.transform_to_df(table_champ_stats_up, version=version_utiliser)
+    table_champ_spells = transform.transform_to_df(table_champ_spells, version=version_utiliser)
 
     table_champ_spells = transform.correct_spell_name(table_champ_spells, table_champion)
     table_champ_spells = transform.correct_spell_costype(table_champ_spells, table_champion)
@@ -290,9 +292,9 @@ def pipeline_champion():
     table_champion_version = table_champion[['key', 'title', 'lore', 'tags', 'partype', 'patch_id']]
     table_champion = table_champion[['key', 'name']]
 
-    table_runes = transform.transform_runes(table_runes, version=lastest_version)
+    table_runes = transform.transform_runes(table_runes, version=version_utiliser)
 
-    table_patch = transform.patch_table(version = lastest_version)
+    table_patch = transform.patch_table(version = version_utiliser)
 
     table_champion = transform.rename_cols(table_champion, rename={'key':'id'})
     table_champion_version = transform.rename_cols(table_champion_version, rename={'key':'champ_id'})

@@ -3,6 +3,12 @@
 ----------------
 
 SELECT * FROM patch;
+
+SELECT version as "Dernière version"
+FROM patch
+ORDER BY id DESC
+LIMIT 1;
+
 SELECT COUNT(0) FROM patch;
 
 SELECT * FROM champion;
@@ -16,9 +22,9 @@ SELECT * FROM champion_info;
 
 SELECT * FROM champion_spells;
 
-SELECT * FROM champion_stats;
+SELECT * FROM champion_stats WHERE patch_id = 1661;
 
-SELECT * FROM champion_stats_up;
+SELECT * FROM champion_stats_up WHERE patch_id = 1661;
 
 ----------------------
 -- View joins
@@ -32,6 +38,7 @@ SELECT s.hp, u.hp_up
 FROM champion_stats s
 INNER JOIN champion_stats_up u USING (champ_id);
 
+-- Stats au niveaux 18
 SELECT a.hp, a.hp_up, a."HP max", a."AD max", a."MP max", c.name
 FROM (
     SELECT s.champ_id, s.hp, u.hp_up, 
