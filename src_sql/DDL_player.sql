@@ -3,7 +3,7 @@
 CREATE TABLE account (
     puuid VARCHAR(78),
     game_name VARCHAR,
-    tagline VARCHAR,
+    tag_line VARCHAR,
     CONSTRAINT pk_account
         PRIMARY KEY (puuid)
 );
@@ -13,7 +13,7 @@ CREATE TABLE account (
 CREATE TABLE summoner (
     puuid VARCHAR(78),
     profil_icon_id INTEGER,
-    revision_date TIMESTAMP,
+    last_modif TIMESTAMP,
     summoner_level INTEGER,
     CONSTRAINT pk_summoner
         PRIMARY KEY (puuid),
@@ -38,3 +38,39 @@ CREATE TABLE champion_mastery (
         ON DELETE CASCADE
 );
 
+-- Schéma de la table challenges
+
+CREATE TABLE challenges (
+    puuid VARCHAR(78),
+    challenge_id INTEGER,
+    percentile REAL,
+    level VARCHAR,
+    level_index	INTEGER,
+    value INTEGER,
+    achieved_time TIMESTAMP,
+    description	TEXT,
+    name	TEXT,
+    CONSTRAINT pk_challenges
+        PRIMARY KEY (puuid, challenge_id),
+    CONSTRAINT fk_challenges_account
+        FOREIGN KEY (puuid) REFERENCES account(puuid)
+        ON DELETE CASCADE
+);
+
+-- Schéma de la table queue
+
+CREATE TABLE queue (
+    puuid VARCHAR(78),
+    league_id VARCHAR,
+    queue_type	VARCHAR,
+    tier	VARCHAR,
+    rank	VARCHAR,
+    league_points	INTEGER,
+    wins	INTEGER,
+    losses INTEGER,
+    CONSTRAINT pk_queue
+        PRIMARY KEY (puuid, league_id),
+    CONSTRAINT fk_queue_account
+        FOREIGN KEY (puuid) REFERENCES account(puuid)
+        ON DELETE CASCADE
+);

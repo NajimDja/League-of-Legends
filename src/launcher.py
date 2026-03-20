@@ -16,7 +16,7 @@ engine = create_engine(database_url)
 metadata = MetaData()
 metadata.reflect(bind=engine)  # Charge toutes les tables depuis la DB
 
-class Pipelines:
+class Pipelines_db:
 
     def pipeline_insert(self, table_name : str, df_insert : pd.DataFrame):
         with Session(engine) as session:
@@ -48,7 +48,7 @@ class Pipelines:
 
 def main(version : int = 0):
 
-    pipe = Pipelines()
+    pipe = Pipelines_db()
 
     print("Extraction et transformation des données en cours...")
     table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch = pipeline_champion(version=version)
@@ -65,8 +65,10 @@ def main(version : int = 0):
     pipe.pipeline_insert(table_name = "champion_stats_up", df_insert = table_champ_stats_up)
     print("Chargement des données en base terminé.")
 
+
 if __name__ == "__main__":
-    print("Lancement du processus de récupération, traitement et chargement des données en base.")
+    print("Lancement du processus de récupération, traitement et chargement des données en base.\n")
+    print(f"{"*"*20}\nPartie : Champions\n{"*"*20}\n")
     ingestion = str(input("Lancer le pipeline d'ingestion de nouvelles données [Y/N] : "))
 
     if ingestion == "Y":
@@ -75,7 +77,9 @@ if __name__ == "__main__":
     
     update_patch = str(input("Mettre à jour la table patch (is_latest) [Y/N] : "))
     if update_patch == "Y":
-        Pipelines().pipeline_update_patch()
+        Pipelines_db().pipeline_update_patch()
         print("MAJ terminée.")
+
+    print(f"{"*"*20}\nPartie : Joueur\n{"*"*20}\n")
     
     print("Fin du processus.")

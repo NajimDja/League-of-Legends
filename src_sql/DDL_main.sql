@@ -17,7 +17,7 @@ CREATE TABLE account (
 CREATE TABLE summoner (
     puuid VARCHAR(78),
     profil_icon_id INTEGER,
-    revision_date TIMESTAMP,
+    last_modif TIMESTAMP,
     summoner_level INTEGER,
     CONSTRAINT pk_summoner
         PRIMARY KEY (puuid),
