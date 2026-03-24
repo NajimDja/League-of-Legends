@@ -66,6 +66,36 @@ class DataBaseGestion:
         result = session.execute(stmt)
         return result.rowcount
     
+
+    def upsert_rows(self, session: Session, table_name: str, df: pd.DataFrame) -> int:
+        """
+        Insère les lignes du DataFrame dans la table.
+        Si un conflit sur la clé primaire est détecté, met à jour les colonnes non-PK.
+        Retourne le nombre de lignes affectées.
+        """
+        if df.empty:
+            return 0
+
+        table = metadata.tables[table_name]
+        pk_cols = {col.name for col in table.primary_key.columns}
+
+        stmt = pg_insert(table).values(df.to_dict(orient="records"))
+
+        update_cols = {
+            col.name: stmt.excluded[col.name]
+            for col in table.columns
+            if col.name not in pk_cols
+        }
+
+        stmt = stmt.on_conflict_do_update(
+            index_elements=list(pk_cols),
+            set_=update_cols
+        )
+
+        result = session.execute(stmt)
+        return result.rowcount
+
+
     def delete_rows(self, session: Session, table_name: str, filters: dict) -> int:
         """
         Supprime les lignes correspondant aux filtres.
@@ -163,3 +193,44 @@ class DataBaseGestion:
             return None
 
         return dict(row)
+
+
+class Pipelines_db:
+
+    def __init__(self):
+        
+        self.db = DataBaseGestion()
+
+    def pipeline_insert(self, table_name : str, df_insert : pd.DataFrame):
+        with Session(engine) as session:
+            nb = self.db.insert_rows(session, table_name, df_insert)
+            session.commit()
+            print(f"\t{nb} lignes insérées dans {table_name}")
+
+    def pipeline_update(self, table_name : str, df_maj : pd.DataFrame):
+        with Session(engine) as session:
+            nb = self.db.update_rows(session, table_name, df_maj)
+            session.commit()
+            print(f"\t{nb} lignes mises à jour dans {table_name}")
+    
+    def pipeline_upsert(self, table_name : str, df_upsert : pd.DataFrame):
+        with Session(engine) as session:
+            nb = self.db.upsert_rows(session, table_name, df_upsert)
+            session.commit()
+            print(f"\t{nb} lignes insérées ou mises à jour dans {table_name}")
+
+    def pipeline_delete(self, table_name : str, filters : dict):
+        with Session(engine) as session:
+            nb = self.db.delete_rows(session, table_name, filters=filters)
+            session.commit()
+            print(f"\t{nb} lignes supprimées dans {table_name}")
+
+    def pipeline_drop_table(self, tables_name : list[str], cascade : bool):
+        if cascade == False:
+            self.db.drop_tables(engine, tables_name) # Sans CASCADE (échoue s'il y a des FK dépendantes)
+        else:
+            self.db.drop_tables(engine, tables_name, cascade=cascade) # Avec CASCADE (supprime aussi les tables liées par FK)
+
+    def pipeline_update_patch(self):
+        with Session(engine) as session:
+            self.db.update_patch_latest(session)

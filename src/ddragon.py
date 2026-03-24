@@ -40,7 +40,13 @@ class ExtractChampionData:
         url = f"https://ddragon.leagueoflegends.com/cdn/{self.version}/data/fr_FR/runesReforged.json"
         resp = requests.get(url).json()
         return resp
-
+    
+    def get_items(self):
+        """Get the items data"""
+        url = f"https://ddragon.leagueoflegends.com/cdn/{self.version}/data/fr_FR/item.json"
+        resp = requests.get(url).json()
+        return resp
+    
     # def download_all_png_champion(self):
     #     """Download all champions pictures"""
     #     for champ in self.list_champ:
@@ -245,8 +251,27 @@ class TransformChampionData:
         
         return df_runes
 
+    def transform_items(self, data, version : str):
+        keys_to_drop = ['colloq','into','image','maps','stats', 'from', 'depth', 'inStore',	'effect',	
+                        'consumed',	'stacks', 'hideFromAll', 'consumeOnFull', 'specialRecipe', 'requiredChampion']
+        all_items = []
+        
+        items = data['data']
+        for ids in items:
+            dico = items[ids]
+            dico = {k:v for k,v in dico.items() if k not in keys_to_drop}
+            cost = dico['gold']['total']
+            sell = dico['gold']['sell']
+            dico.update({'cost':cost, 'sell':sell, 'item_id':ids})
+            all_items.append(dico)
+        
+        all_items = self.listing_into_text(all_items, key='tags', sep=' / ')
+        all_items = self.text_cleaning(all_items, key='description')
+        all_items = self.transform_to_df(all_items, version=version).drop(columns=['gold'])
+        all_items = self.rename_cols(all_items, rename={'description':'stats', 'plaintext':'description'})
+        return all_items
 
-def pipeline_champion(version : int):
+def pipeline_ddragon(version : int):
     """Pipeline d'application des méthodes d'extraction, de transformation et de chargement"""
     
     extract = ExtractChampionData(version=version)
@@ -296,6 +321,9 @@ def pipeline_champion(version : int):
 
     table_patch = transform.patch_table(version = version_utiliser)
 
+    table_item = extract.get_items()
+    table_item = transform.transform_items(data=table_item, version = version_utiliser)
+
     table_champion = transform.rename_cols(table_champion, rename={'key':'id'})
     table_champion_version = transform.rename_cols(table_champion_version, rename={'key':'champ_id'})
     table_champ_info = transform.rename_cols(table_champ_info, rename={'key':'champ_id'})
@@ -305,7 +333,7 @@ def pipeline_champion(version : int):
                                                                             'spellblockperlevel':'spellblock_up', 'hpregenperlevel':'hpregen_up', 'mpregenperlevel':'mpregen_up',
                                                                             'critperlevel':'crit_up', 'attackdamageperlevel':'attackdamage_up',	'attackspeedperlevel':'attackspeed_up'})
     
-    return table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch
+    return table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch, table_item
 
 if __name__ == "__main__":
-    table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch = pipeline_champion()
+    table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch = pipeline_ddragon()

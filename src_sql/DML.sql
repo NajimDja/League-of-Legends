@@ -20,6 +20,10 @@ SELECT * FROM champion_passive;
 
 SELECT * FROM champion_info;
 
+SELECT * FROM runes;
+
+SELECT * FROM items;
+
 SELECT * FROM champion_spells;
 
 SELECT * FROM champion_stats WHERE patch_id = 1661;
