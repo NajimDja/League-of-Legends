@@ -30,6 +30,13 @@ SELECT * FROM champion_stats WHERE patch_id = 1661;
 
 SELECT * FROM champion_stats_up WHERE patch_id = 1661;
 
+-----------------------
+-- Requêtes spécifiques
+-----------------------
+
+\prompt 'Entrez un nom item : ' mot_cle
+SELECT * FROM items WHERE name LIKE '%' || :mot_cle || '%';
+
 ----------------------
 -- View joins
 ----------------------
@@ -41,6 +48,22 @@ INNER JOIN champion_stats_up u ON s.champ_id = u.champ_id;
 SELECT s.hp, u.hp_up
 FROM champion_stats s
 INNER JOIN champion_stats_up u USING (champ_id);
+
+-- Check stats_up
+WITH ranked AS (
+    SELECT
+        csu.*,
+        ROW_NUMBER() OVER (
+            PARTITION BY csu.patch_id
+            ORDER BY csu.champ_id -- ou une autre colonne pour définir l'ordre
+        ) AS rn
+    FROM champion_stats_up csu
+)
+SELECT *
+FROM ranked
+INNER JOIN champion ON champion.id = ranked.champ_id
+WHERE rn <= 5
+ORDER BY patch_id, rn;
 
 -- Stats au niveaux 18
 SELECT a.hp, a.hp_up, a."HP max", a."AD max", a."MP max", c.name
