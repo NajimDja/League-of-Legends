@@ -7,8 +7,8 @@ Ce projet a pour but de récolter et d'analyser les parties jouées sur le jeu L
 
 - Extraction, Transformation et Chargement des données
     - [X] Champions
-    - [ ] Items
-    - [ ] Runes
+    - [X] Items
+    - [X] Runes
     - [ ] Comptes
     - [ ] Games
 - [ ] Dashboard
