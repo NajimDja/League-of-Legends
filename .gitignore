@@ -1,3 +1,5 @@
 .venv/
 .env
 images/
+.vscode/
+data/
