@@ -14,12 +14,16 @@ CREATE TABLE patch (
 -- TABLES CHAMPIONS
 -------------------------------
 
+-- Schéma de la table champion
+
 CREATE TABLE champion (
     id   INTEGER,
     name TEXT NOT NULL,
     CONSTRAINT pk_champion
         PRIMARY KEY (id)
 );
+
+-- Schéma de la table champion_version
 
 CREATE TABLE champion_version (
     champ_id INTEGER NOT NULL,
@@ -37,6 +41,8 @@ CREATE TABLE champion_version (
         FOREIGN KEY (patch_id) REFERENCES patch(id)
         ON DELETE CASCADE
 );
+
+-- Schéma de la table champion_info
 
 CREATE TABLE champion_info (
     champ_id   INTEGER,
@@ -57,6 +63,8 @@ CREATE TABLE champion_info (
         ON DELETE CASCADE
 );
 
+-- Schéma de la table champion_passive
+
 CREATE TABLE champion_passive (
     champ_id    INTEGER,
     patch_id    INTEGER,
@@ -71,6 +79,8 @@ CREATE TABLE champion_passive (
         FOREIGN KEY (patch_id) REFERENCES patch(id)
         ON DELETE CASCADE
 );
+
+-- Schéma de la table champion_spells
 
 CREATE TABLE champion_spells (
     champ_id      INTEGER,
@@ -94,6 +104,8 @@ CREATE TABLE champion_spells (
         FOREIGN KEY (patch_id) REFERENCES patch(id)
         ON DELETE CASCADE
 );
+
+-- Schéma de la table champion_stats
 
 CREATE TABLE champion_stats (
     champ_id    INTEGER,
@@ -119,6 +131,8 @@ CREATE TABLE champion_stats (
         ON DELETE CASCADE
 );
 
+-- Schéma de la table champion_stats_up
+
 CREATE TABLE champion_stats_up (
     champ_id        INTEGER,
     patch_id        INTEGER,
@@ -139,4 +153,32 @@ CREATE TABLE champion_stats_up (
     CONSTRAINT fk_champion_stats_up_patch
         FOREIGN KEY (patch_id) REFERENCES patch(id)
         ON DELETE CASCADE
+);
+
+-- Schéma de la table items
+
+CREATE TABLE items (
+    item_id INTEGER,
+    patch_id INTEGER,
+    name TEXT,
+    description TEXT,
+    stats TEXT,
+    cost INTEGER,
+    sell INTEGER,
+    tags TEXT,
+    CONSTRAINT pk_item
+        PRIMARY KEY (item_id)
+);
+
+-- Schéma de la table runes
+
+CREATE TABLE runes (
+    type_rune_id	INTEGER,
+    type_name	TEXT,
+    child_rune_id	INTEGER,
+    name	TEXT,
+    description	TEXT,
+    patch_id INTEGER,
+    CONSTRAINT pk_runes
+        PRIMARY KEY (type_rune_id, child_rune_id)
 );
