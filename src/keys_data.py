@@ -11,7 +11,7 @@ class KeysData:
                     "PlayerScore6", "PlayerScore7", "PlayerScore8", "PlayerScore9", "challenges",
                     "placement", "playerAugment1", "playerAugment2", "playerAugment3", "playerAugment4",
                     "playerAugment5", "playerAugment6", "playerSubteamId", "profileIcon", "subteamPlacement",
-                    "timePlayed"]
+                    "perks"]
     
     keys_to_reject_challenges = ["12AssistStreakCount", "HealFromMapSources", "InfernalScalePickup",
                     "SWARM_DefeatAatrox", "SWARM_DefeatBriar", "SWARM_DefeatMiniBosses",
