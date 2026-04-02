@@ -2,6 +2,8 @@
 
 class KeysData:
 
+    keys_ids = ['puuid', 'game_id']
+
     keys_match_info = ["endOfGameResult", "gameCreation", "gameDuration", "gameEndTimestamp", "gameId", 
                         "gameMode", "gameName", "gameStartTimestamp", "gameType", "gameVersion", "mapId", 
                         "platformId", "queueId"]

@@ -3,8 +3,7 @@
 CREATE TABLE game_info (
     game_id INTEGER,
     match_id VARCHAR,
-    puuid VARCHAR(78),
-    end_game_result VARCHAR,
+    end_of_game_result VARCHAR,
     game_creation TIMESTAMP,
     game_duration VARCHAR,
     game_end TIMESTAMP,
@@ -13,7 +12,9 @@ CREATE TABLE game_info (
     game_name TEXT,
     game_type TEXT,
     game_version TEXT,
-    map_id,
+    map_id INTEGER,
+    queue_id INTEGER,
+    platforme_id VARCHAR,
     CONSTRAINT pk_game_info
         PRIMARY KEY (game_id)
 );
