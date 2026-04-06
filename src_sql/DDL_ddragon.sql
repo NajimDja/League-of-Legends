@@ -182,3 +182,15 @@ CREATE TABLE runes (
     CONSTRAINT pk_runes
         PRIMARY KEY (type_rune_id, child_rune_id)
 );
+
+-- Schéma de la table summoner_spells
+
+CREATE TABLE summoner_spells (
+    summoner_spell_id INTEGER,
+    patch_id INTEGER,
+    name	TEXT,
+    description	TEXT,
+    cooldown_burn VARCHAR,
+    CONSTRAINT pk_summoner_spells
+        PRIMARY KEY (summoner_spell_id, patch_id)
+);

@@ -47,6 +47,12 @@ class ExtractChampionData:
         resp = requests.get(url).json()
         return resp
     
+    def get_summoner_spells(self):
+        """Get the summoner spells"""
+        url = f"https://ddragon.leagueoflegends.com/cdn/{self.version}/data/fr_FR/summoner.json"
+        resp = requests.get(url).json()
+        return resp
+    
     # def download_all_png_champion(self):
     #     """Download all champions pictures"""
     #     for champ in self.list_champ:
@@ -271,6 +277,19 @@ class TransformChampionData:
         all_items = self.rename_cols(all_items, rename={'description':'stats', 'plaintext':'description'})
         return all_items
 
+    def transform_summoner(self, summoners, version : str):
+        keys_to_keep = ['name', 'description', 'cooldownBurn', 'key']
+        all_summoners = []
+        data = summoners['data']
+        for summon in data:
+            dico = data[summon]
+            dico = {k:v for k,v in dico.items() if k in keys_to_keep}
+            all_summoners.append(dico)
+        
+        all_summoners = self.transform_to_df(all_summoners, version=version)
+        all_summoners = self.rename_cols(all_summoners, rename={'cooldownBurn':'cooldown_burn', 'key':'summoner_spell_id'})
+        return all_summoners
+
 def pipeline_ddragon(version : int):
     """Pipeline d'application des méthodes d'extraction, de transformation et de chargement"""
     
@@ -281,10 +300,13 @@ def pipeline_ddragon(version : int):
 
     details = extract.get_details_champ_data()
     table_runes = extract.get_runes()
+    table_summoners_spells = extract.get_summoner_spells()
+
     details = transform.drop_keys(details)
     
     table_champion, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats = transform.dispatch_data(details)
 
+    table_summoner_spells = transform.transform_summoner(summoners=table_summoners_spells, version=version_utiliser)
     
     table_champion = transform.listing_into_text(table_champion, "tags", sep=' / ')
     table_champion = transform.text_cleaning(table_champion, key='lore')
@@ -329,11 +351,13 @@ def pipeline_ddragon(version : int):
     table_champ_info = transform.rename_cols(table_champ_info, rename={'key':'champ_id'})
     table_champ_passive = transform.rename_cols(table_champ_passive, rename={'key':'champ_id'})
     table_champ_stats = transform.rename_cols(table_champ_stats, rename={'key':'champ_id'})
-    table_champ_stats_up = transform.rename_cols(table_champ_stats_up, rename={'key':'champ_id', 'hpperlevel':'hp_up',	'mpperlevel':'mp_up', 'armorperlevel':'armor_up',
-                                                                            'spellblockperlevel':'spellblock_up', 'hpregenperlevel':'hpregen_up', 'mpregenperlevel':'mpregen_up',
-                                                                            'critperlevel':'crit_up', 'attackdamageperlevel':'attackdamage_up',	'attackspeedperlevel':'attackspeed_up'})
+    table_champ_stats_up = transform.rename_cols(table_champ_stats_up, rename={
+                                                    'key':'champ_id', 'hpperlevel':'hp_up',	'mpperlevel':'mp_up', 'armorperlevel':'armor_up',
+                                                    'spellblockperlevel':'spellblock_up', 'hpregenperlevel':'hpregen_up', 'mpregenperlevel':'mpregen_up',
+                                                    'critperlevel':'crit_up', 'attackdamageperlevel':'attackdamage_up',	'attackspeedperlevel':'attackspeed_up'})
     
-    return table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch, table_item
+    return [table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, 
+            table_champ_stats, table_champ_stats_up, table_runes, table_patch, table_item, table_summoner_spells]
 
 if __name__ == "__main__":
-    table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch = pipeline_ddragon()
+    table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch, table_summoner_spells = pipeline_ddragon()

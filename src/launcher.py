@@ -20,7 +20,7 @@ def main(version : int = 0):
     pipe = Pipelines_db()
 
     print("Extraction et transformation des données en cours...")
-    table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch, table_item = pipeline_ddragon(version=version)
+    table_champion, table_champion_version, table_champ_passive, table_champ_info, table_champ_spells, table_champ_stats, table_champ_stats_up, table_runes, table_patch, table_item, table_summoner_spells = pipeline_ddragon(version=version)
     print("Extraction et transformation terminées")
 
     print("Chargement des données en base.")
@@ -34,6 +34,7 @@ def main(version : int = 0):
     pipe.pipeline_upsert(table_name = "champion_stats_up", df_upsert = table_champ_stats_up)
     pipe.pipeline_upsert(table_name = "runes", df_upsert = table_runes)
     pipe.pipeline_upsert(table_name = "items", df_upsert = table_item)
+    pipe.pipeline_upsert(table_name = "summoner_spells", df_upsert = table_summoner_spells)
     print("Chargement des données en base terminé.")
 
 

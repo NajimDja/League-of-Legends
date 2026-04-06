@@ -26,9 +26,11 @@ SELECT * FROM items;
 
 SELECT * FROM champion_spells;
 
-SELECT * FROM champion_stats WHERE patch_id = 1661;
+SELECT * FROM champion_stats;
 
-SELECT * FROM champion_stats_up WHERE patch_id = 1661;
+SELECT * FROM champion_stats_up;
+
+SELECT * FROM summoner_spells;
 
 -----------------------
 -- Requêtes spécifiques
