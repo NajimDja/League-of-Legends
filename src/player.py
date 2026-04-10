@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import pandas as pd
 import json
 from keys_data import KeysData
+from db_gestion import Pipelines_db
 load_dotenv()
 
 api_key = os.getenv("API_KEY")
@@ -107,10 +108,10 @@ class ExtractPlayerData:
         return all_match_ids
 
 
-    def get_game_data(self, game_id : str):
+    def get_game_data(self, match_id : str):
         """Get all informations of a match by match id"""
 
-        api_url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{game_id}?api_key={api_key}"
+        api_url = f"https://europe.api.riotgames.com/lol/match/v5/matches/{match_id}?api_key={api_key}"
         resp = requests.get(api_url).json()
         return resp
     
@@ -222,14 +223,52 @@ class TransformPlayerData:
         
         return [camel_to_snake(name) for name in col_names]
     
+    def parse_perks(self, perks: dict) -> dict:
+        """
+        Transforme le bloc 'perks' de l'API Riot Match v5
+        en un dictionnaire plat, prêt à intégrer un DataFrame.
+        """
+        styles = perks["styles"]
+        primary = next(s for s in styles if s["description"] == "primaryStyle")
+        sub = next(s for s in styles if s["description"] == "subStyle")
 
-class Pipelines:
+        return {
+            # Voie principale
+            "id_tree_primary":    primary["style"],
+            "id_primary_1":      primary["selections"][0]["perk"],
+            "id_primary_2":       primary["selections"][1]["perk"],
+            "id_primary_3":       primary["selections"][2]["perk"],
+            "id_primary_4":       primary["selections"][3]["perk"],               
+
+            # Voie secondaire
+            "id_tree_sub":        sub["style"],
+            "id_sub_1":           sub["selections"][0]["perk"],
+            "id_sub_2":           sub["selections"][1]["perk"]
+        }
+    
+    def parse_bans(self, teams_data) -> list[dict]:
+        bans = []
+        for i in teams_data:
+            current_bans = i['bans']
+            for x in current_bans:
+                x.pop('pickTurn')
+            bans += current_bans
+        return bans
+    
+    def select_columns(self, df_base : pd.DataFrame, champs : list[str]) -> pd.DataFrame:
+        """Capture les colonnes en fonction d'une liste"""
+        existing = [x for x in champs if x in df_base.columns]
+        df_new = df_base[champs]
+        return df_new
+    
+
+class PipelinesPlayer:
 
     def __init__(self):
         self.extract = ExtractPlayerData()
         self.transfo = TransformPlayerData()
-        self.keys_data = KeysData()
-
+        self.keys = KeysData()
+        self.pipe_db = Pipelines_db()
 
     def pipeline_account(self, gameName : str, tagLine : str):
         """Récupération et traitement des données de compte"""
@@ -320,38 +359,96 @@ class Pipelines:
         """Récupération et traitement des données de parties"""
 
         print("- Récupération des données de parties de jeux.")
-        
-        df_matchs_info = []
-
         list_id_games = self.extract.get_all_games_ids(puuid=puuid)
         
-        # p = [puuid for x in list_id_games]
-        # df_gameid_puuid = pd.DataFrame({'game_id': list_id_games, 'puuid': p})
+        df_participant_data = []
+        df_participant_challenge = []
+        df_participant_perks = []
+        df_game_info = []
+        df_relation_gameid_playerid = []
 
         for id in list_id_games:
             
-            game = self.extract.get_game_data(game_id=id)
+            match = self.extract.get_game_data(match_id=id)
 
-            index_player = game['metadata']['participants'].index(puuid)
+            game_id = match['info']['gameId']
+    
+            game_info = match['info']
+            game_info = {k:v for k,v in game_info.items() if k in self.keys.keys_match_info}
+            game_info.update({'match_id' : id})
+            df_game_info.append(game_info)
+
+            bans = self.transfo.parse_bans(teams_data = match['info']['teams'])
+        
+            puuids = match['metadata']['participants']
+            player_map = Pipelines_db().pipeline_resolve_players(puuids)
+
+            participants = match['info']['participants']
+
+            for participant in participants:
             
-            game_info = game['info']
-            game_info = {k:v for k,v in game.items() if k in self.keys_data.keys_match_info}
-            game_info.update({'match_id' : id, 'puuid' : puuid})
+                player_id = player_map.get(participant['puuid'])
+                index_position_participant = participants.index(participant)
+                champ_id_ban = bans[index_position_participant]['championId']
 
-            game_data = game['info']['participants'][index_player]
-            
-            df_matchs_info.append(game_info)
+                participant_data = participant
+                participant_data = {k:v for k,v in participant_data.items() if k not in self.keys.keys_to_reject}
+                participant_data.update({'player_id' : player_id, 'game_id' : game_id, 'championBan' : champ_id_ban})
+                
+                participant_challenge = participant['challenges']
+                participant_challenge = {k:v for k,v in participant_challenge.items() if k not in self.keys.keys_to_reject_challenges}
+                participant_challenge.update({'game_id' : game_id, 'player_id' : player_id})
+                
+                participant_perks = participant['perks']
+                participant_perks = self.transfo.parse_perks(participant_perks)
+                participant_perks.update({'game_id' : game_id, 'player_id' : player_id})
+                
+                df_participant_data.append(participant_data)
+                df_participant_challenge.append(participant_challenge)
+                df_participant_perks.append(participant_perks)
+                df_relation_gameid_playerid.append({'player_id' : player_id, 'game_id': game_id})
 
-        df_matchs_info = self.transfo.to_dataframe(df_matchs_info) #.drop(columns=['gameId'])
-        df_matchs_info.columns = self.transfo.add_underscore(col_names = df_matchs_info.columns)
 
-        return df_matchs_info
+        df_participant_data = self.transfo.to_dataframe(df_participant_data)
+        df_participant_challenge = self.transfo.to_dataframe(df_participant_challenge)
+
+        df_all_game_data = self.transfo.merge_df(df_participant_data, df_participant_challenge,
+                                            left_key=['player_id', 'game_id'],
+                                            rigth_key=['player_id', 'game_id'],
+                                            how='inner')
+
+        table_participant_perks = self.transfo.to_dataframe(df_participant_perks)
+        table_game_info = self.transfo.to_dataframe(df_game_info)
+        table_idgame_playerid = self.transfo.to_dataframe(df_relation_gameid_playerid)
+
+        table_communication = self.transfo.select_columns(df_all_game_data, champs=self.keys.vision_communication)
+        table_identite_joueur = self.transfo.select_columns(df_all_game_data, champs=self.keys.identite_joueur)
+        table_economie_items = self.transfo.select_columns(df_all_game_data, champs=self.keys.economie_items)
+        table_cc_capacites = self.transfo.select_columns(df_all_game_data, champs=self.keys.cc_capacites)
+        table_figth = self.transfo.select_columns(df_all_game_data, champs=self.keys.combat)
+        table_damage = self.transfo.select_columns(df_all_game_data, champs=self.keys.degats)
+        table_farming = self.transfo.select_columns(df_all_game_data, champs=self.keys.jungle_farm)
+        table_objective_structures = self.transfo.select_columns(df_all_game_data, champs=self.keys.objectifs_structures)
+        table_perf_globale = self.transfo.select_columns(df_all_game_data, champs=self.keys.performance_globale)
+
+        return [table_game_info, 
+                table_participant_perks, 
+                table_idgame_playerid, 
+                table_communication, 
+                table_identite_joueur, 
+                table_economie_items, 
+                table_cc_capacites, 
+                table_figth, 
+                table_damage, 
+                table_farming, 
+                table_objective_structures, 
+                table_perf_globale]
     
 
 def pipeline_new_player(gameName : str, tagLine : str):
     """Insérer un nouveau joueur en base."""
     
-    pipe = Pipelines()
+    pipe = PipelinesPlayer()
 
     df_account, puuid = pipe.pipeline_account(gameName=gameName, tagLine=tagLine)
     df_summoner = pipe.pipeline_summoner(puuid=puuid)

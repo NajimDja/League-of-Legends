@@ -21,19 +21,19 @@ class KeysData:
                     "SWARM_PickupGold", "SWARM_ReachLevel50", "SWARM_Survive15Min",
                     "SWARM_WinWith5EvolvedWeapons", "gameLength", "legendaryItemUsed", "poroExplosions",
                     "snowballsHit", "survivedSingleDigitHpCount", "survivedThreeImmobilizesInFight",
-                    "mejaisFullStackInTime", "tookLargeDamageSurvived",
+                    "mejaisFullStackInTime", "tookLargeDamageSurvived", "killsOnRecentlyHealedByAramPack",
                     "twentyMinionsIn3SecondsCount", "unseenRecalls", "killingSprees", "turretTakedowns"
                     ]
     
-    identite_joueur = ["puuid", "game_id",
+    identite_joueur = ["player_id", "game_id",
         "riotIdGameName", "riotIdTagline", "summonerId",
         "summonerLevel", "championId", "championName",
         "champLevel", "champExperience", "participantId", "teamId",
         "lane", "individualPosition", "teamPosition", "role",
-        "playedChampSelectPosition"
+        "playedChampSelectPosition", "champion_ban"
     ]
 
-    combat = ["puuid", "game_id",
+    combat = ["player_id", "game_id",
             "kills", "deaths", "assists", "kda", "doubleKills", "tripleKills", "quadraKills", "pentaKills",
             "largestMultiKill", "largestKillingSpree", "killingSprees", "firstBloodKill", "firstBloodAssist", 
             "killParticipation", "soloKills", "outnumberedKills", "killAfterHiddenWithAlly", "killsNearEnemyTurret", 
@@ -45,7 +45,7 @@ class KeysData:
             "knockEnemyIntoTeamAndKill"
     ]
 
-    degats = ["puuid", "game_id",
+    degats = ["player_id", "game_id",
         "totalDamageDealt", "totalDamageDealtToChampions",
         "physicalDamageDealt", "magicDamageDealt", "trueDamageDealt",
         "physicalDamageDealtToChampions", "magicDamageDealtToChampions",
@@ -53,10 +53,13 @@ class KeysData:
         "totalDamageTaken", "physicalDamageTaken", "magicDamageTaken", "trueDamageTaken",
         "largestCriticalStrike",
         "damagePerMinute", "teamDamagePercentage",
-        "damageTakenOnTeamPercentage"
+        "damageTakenOnTeamPercentage", "totalHeal", "totalHealsOnTeammates",
+        "totalDamageShieldedOnTeammates", "totalUnitsHealed",
+        "effectiveHealAndShielding", "saveAllyFromDeath", 
+        "quickCleanse"
     ]
 
-    jungle_farm = ["puuid", "game_id",
+    jungle_farm = ["player_id", "game_id",
         "neutralMinionsKilled", "totalMinionsKilled",
         "totalAllyJungleMinionsKilled", "totalEnemyJungleMinionsKilled",
         "alliedJungleMonsterKills", "enemyJungleMonsterKills",
@@ -67,10 +70,12 @@ class KeysData:
         "epicMonsterKillsNearEnemyJungler",
         "epicMonsterKillsWithin30SecondsOfSpawn",
         "junglerTakedownsNearDamagedEpicMonster",
-        "buffsStolen"
+        "buffsStolen", "maxCsAdvantageOnLaneOpponent", "maxLevelLeadLaneOpponent",
+        "laningPhaseGoldExpAdvantage", "earlyLaningPhaseGoldExpAdvantage",
+        "blastConeOppositeOpponentCount", "fistBumpParticipation"
     ]
     
-    objectifs_structures = ["puuid", "game_id",
+    objectifs_structures = ["player_id", "game_id",
         "baronKills", "dragonKills", "inhibitorKills",
         "turretKills", "nexusKills", "objectivesStolen", "objectivesStolenAssists",
         "damageDealtToObjectives", "damageDealtToBuildings",
@@ -93,7 +98,7 @@ class KeysData:
         "killsWithHelpFromEpicMonster"
     ] #earliestBaron
     
-    vision_communication = ["puuid", "game_id",
+    vision_communication = ["player_id", "game_id",
         "visionScore", "wardsPlaced", "wardsKilled",
         "sightWardsBoughtInGame", "visionWardsBoughtInGame", "detectorWardsPlaced",
         "allInPings", "assistMePings", "basicPings", "commandPings", "dangerPings",
@@ -105,21 +110,13 @@ class KeysData:
         "twoWardsOneSweeperCount", "visionScoreAdvantageLaneOpponent"
     ]
 
-    economie_items = ["puuid", "game_id",
+    economie_items = ["player_id", "game_id",
         "goldEarned", "goldSpent", "itemsPurchased", "consumablesPurchased",
         "item0", "item1", "item2", "item3", "item4", "item5", "item6",
         "goldPerMinute"
     ]
 
-    soins_soutien = ["puuid", "game_id",
-        "totalHeal", "totalHealsOnTeammates",
-        "totalDamageShieldedOnTeammates", "totalUnitsHealed",
-        "effectiveHealAndShielding", "saveAllyFromDeath", 
-        "killsOnRecentlyHealedByAramPack",
-        "quickCleanse"
-    ]
-
-    cc_capacites = ["puuid", "game_id",
+    cc_capacites = ["player_id", "game_id",
         "timeCCingOthers", "totalTimeCCDealt",
         "spell1Casts", "spell2Casts", "spell3Casts", "spell4Casts",
         "summoner1Casts", "summoner1Id", "summoner2Casts", "summoner2Id",
@@ -128,13 +125,7 @@ class KeysData:
         "dodgeSkillShotsSmallWindow", "landSkillShotsEarlyGame"
     ]
 
-    phase_de_lane = ["puuid", "game_id",
-        "maxCsAdvantageOnLaneOpponent", "maxLevelLeadLaneOpponent",
-        "laningPhaseGoldExpAdvantage", "earlyLaningPhaseGoldExpAdvantage",
-        "blastConeOppositeOpponentCount", "fistBumpParticipation"
-    ]
-
-    performance_globale = ["puuid", "game_id",
+    performance_globale = ["player_id", "game_id",
         "win", "timePlayed", "longestTimeSpentLiving", "totalTimeSpentDead",
         "gameEndedInSurrender", "gameEndedInEarlySurrender", "teamEarlySurrendered",
         "inhibitorsLost", "nexusLost", "turretsLost", "eligibleForProgression",

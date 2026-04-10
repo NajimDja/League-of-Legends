@@ -31,6 +31,28 @@ class DataBaseGestion:
         for k in tables:
             print(f"Table {k} avec les colonnes suivante : {tables[k]}\n")
 
+    def get_or_create_player_ids_bulk(self, session: Session, puuids: list[str]) -> dict[str, int]:
+        """
+        Insère les puuids inconnus dans player_id_map et retourne
+        le mapping { puuid: player_id } pour tous les puuids fournis.
+        """
+        table = metadata.tables["player_id_map"]
+
+        # Insère les nouveaux puuids, ignore les existants
+        stmt = (
+            pg_insert(table)
+            .values([{"puuid": p} for p in puuids])
+            .on_conflict_do_nothing()
+        )
+        session.execute(stmt)
+
+        # Récupère les player_id de tous les puuids (nouveaux + existants)
+        result = session.execute(
+            table.select().where(table.c.puuid.in_(puuids))
+        )
+
+        return {row.puuid: row.player_id for row in result}
+
     def insert_rows(self, session: Session, table_name: str, df: pd.DataFrame) -> int:
         """
         Insère les lignes du DataFrame dans la table.
@@ -389,6 +411,17 @@ class Pipelines_db:
     def __init__(self):
         
         self.db = DataBaseGestion()
+
+    def pipeline_resolve_players(self, puuids: list[str]) -> dict[str, int]:
+        """
+        Résout les player_id pour une liste de puuids.
+        Insère les nouveaux joueurs et retourne le mapping { puuid: player_id }.
+        """
+        with Session(engine) as session:
+            player_map = self.db.get_or_create_player_ids_bulk(session, puuids)
+            session.commit()
+            print(f"\t{len(player_map)} joueurs résolus")
+            return player_map
 
     def pipeline_insert(self, table_name : str, df_insert : pd.DataFrame):
         with Session(engine) as session:

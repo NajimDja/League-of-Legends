@@ -1,11 +1,27 @@
+-- Schéma de la table player_id_map
+
+CREATE TABLE player_id_map (
+    player_id  SERIAL PRIMARY KEY,
+    puuid      VARCHAR(78) NOT NULL UNIQUE
+);
+
+-- Schéma de la table gameid_puuid
+
+CREATE TABLE gameid_playerid (
+    player_id INTEGER,
+    game_id BIGINT,
+    CONSTRAINT pk_gameid_playerid
+        PRIMARY KEY (player_id, game_id)
+);
+
 -- Schéma de la table game_info
 
 CREATE TABLE game_info (
-    game_id INTEGER,
+    game_id BIGINT,
     match_id VARCHAR,
     end_of_game_result VARCHAR,
     game_creation TIMESTAMP,
-    game_duration VARCHAR,
+    game_duration INTEGER,
     game_end TIMESTAMP,
     game_start TIMESTAMP,
     game_mode VARCHAR,
@@ -19,12 +35,13 @@ CREATE TABLE game_info (
         PRIMARY KEY (game_id)
 );
 
--- Schéma de la table communication
+-- Schéma de la table game_communication
 
-CREATE TABLE communication (
-    puuid VARCHAR,
-    game_id INTEGER,
+CREATE TABLE game_communication (
+    player_id INTEGER,
+    game_id BIGINT,
     visionScore INTEGER,
+    visionScorePerMinute REAL,
     wardsPlaced INTEGER,
     wardsKilled INTEGER,
     sightWardsBoughtInGame INTEGER,
@@ -46,19 +63,20 @@ CREATE TABLE communication (
     visionClearedPings INTEGER,
     stealthWardsPlaced INTEGER,
     controlWardsPlaced INTEGER,
-    visionScorePerMinute REAL,
     wardTakedowns INTEGER,
     wardTakedownsBefore20M INTEGER,
     wardsGuarded INTEGER,
     twoWardsOneSweeperCount INTEGER,
     visionScoreAdvantageLaneOpponent REAL,
-	CONSTRAINT pk_communication
-		PRIMARY KEY (puuid, game_id)
+	CONSTRAINT pk_game_communication
+		PRIMARY KEY (player_id, game_id)
 );
 
-CREATE TABLE cc_capacites (
-    puuid VARCHAR,
-    game_id INTEGER,
+-- Schéma de la table game_capacites
+
+CREATE TABLE game_capacites (
+    player_id INTEGER,
+    game_id BIGINT,
     timeCCingOthers INTEGER,
     totalTimeCCDealt INTEGER,
     spell1Casts INTEGER,
@@ -75,20 +93,22 @@ CREATE TABLE cc_capacites (
     skillshotsDodged INTEGER,
     dodgeSkillShotsSmallWindow INTEGER,
     landSkillShotsEarlyGame INTEGER,
-	CONSTRAINT pk_cc_capacites
-		PRIMARY KEY (puuid, game_id)
+	CONSTRAINT pk_game_capacites
+		PRIMARY KEY (player_id, game_id)
 );
 
-CREATE TABLE damage (
-    puuid VARCHAR,
-    game_id INTEGER,
+-- Schéma de la table game_damage
+
+CREATE TABLE game_damage (
+    player_id INTEGER,
+    game_id BIGINT,
     totalDamageDealt INTEGER,
     totalDamageDealtToChampions INTEGER,
     physicalDamageDealt INTEGER,
-    magicDamageDealt INTEGER,
-    trueDamageDealt INTEGER,
     physicalDamageDealtToChampions INTEGER,
+    magicDamageDealt INTEGER,
     magicDamageDealtToChampions INTEGER,
+    trueDamageDealt INTEGER,
     trueDamageDealtToChampions INTEGER,
     damageSelfMitigated INTEGER,
     totalDamageTaken INTEGER,
@@ -99,13 +119,23 @@ CREATE TABLE damage (
     damagePerMinute REAL,
     teamDamagePercentage REAL,
     damageTakenOnTeamPercentage REAL,
-	CONSTRAINT pk_damage
-		PRIMARY KEY (puuid, game_id)
+    totalHeal INTEGER,
+    totalHealsOnTeammates INTEGER,
+    totalDamageShieldedOnTeammates INTEGER,
+    totalUnitsHealed INTEGER,
+    effectiveHealAndShielding REAL,
+    saveAllyFromDeath INTEGER,
+    killsOnRecentlyHealedByAramPack INTEGER,
+    quickCleanse INTEGER,
+	CONSTRAINT pk_game_damage
+		PRIMARY KEY (player_id, game_id)
 );
 
-CREATE TABLE economie_items (
-    puuid VARCHAR,
-    game_id INTEGER,
+-- Schéma de la table game_economie
+
+CREATE TABLE game_economie (
+    player_id INTEGER,
+    game_id BIGINT,
     goldEarned INTEGER,
     goldSpent INTEGER,
     itemsPurchased INTEGER,
@@ -118,13 +148,15 @@ CREATE TABLE economie_items (
     item5 INTEGER,
     item6 INTEGER,
     goldPerMinute REAL,
-	CONSTRAINT pk_economie_items
-		PRIMARY KEY (puuid, game_id)
+	CONSTRAINT pk_game_economie
+		PRIMARY KEY (player_id, game_id)
 );
 
-CREATE TABLE farming (
-    puuid VARCHAR,
-    game_id INTEGER,
+-- Schéma de table game_farming
+
+CREATE TABLE game_farming (
+    player_id INTEGER,
+    game_id BIGINT,
     neutralMinionsKilled INTEGER,
     totalMinionsKilled INTEGER,
     totalAllyJungleMinionsKilled INTEGER,
@@ -143,13 +175,21 @@ CREATE TABLE farming (
     epicMonsterKillsWithin30SecondsOfSpawn INTEGER,
     junglerTakedownsNearDamagedEpicMonster INTEGER,
     buffsStolen INTEGER,
-	CONSTRAINT pk_farming
-		PRIMARY KEY (puuid, game_id)
+    maxCsAdvantageOnLaneOpponent REAL,
+    maxLevelLeadLaneOpponent INTEGER,
+    laningPhaseGoldExpAdvantage INTEGER,
+    earlyLaningPhaseGoldExpAdvantage INTEGER,
+    blastConeOppositeOpponentCount INTEGER,
+    fistBumpParticipation INTEGER,
+	CONSTRAINT pk_game_farming
+		PRIMARY KEY (player_id, game_id)
 );
 
-CREATE TABLE fight (
-    puuid VARCHAR,
-    game_id INTEGER,
+-- Schéma de la table game_fight
+
+CREATE TABLE game_fight (
+    player_id INTEGER,
+    game_id BIGINT,
     kills INTEGER,
     deaths INTEGER,
     assists INTEGER,
@@ -188,12 +228,14 @@ CREATE TABLE fight (
     immobilizeAndKillWithAlly INTEGER,
     knockEnemyIntoTeamAndKill INTEGER,
 	CONSTRAINT pk_fight
-		PRIMARY KEY (puuid, game_id)
+		PRIMARY KEY (player_id, game_id)
 );
 
-CREATE TABLE identite_joueur (
-    puuid VARCHAR,
-    game_id INTEGER,
+-- Schéma de la table game_player
+
+CREATE TABLE game_player (
+    player_id INTEGER,
+    game_id BIGINT,
     riotIdGameName VARCHAR,
     riotIdTagline VARCHAR,
     summonerId VARCHAR,
@@ -209,13 +251,16 @@ CREATE TABLE identite_joueur (
     teamPosition VARCHAR,
     role VARCHAR,
     playedChampSelectPosition INTEGER,
+    championBan INTEGER,
 	CONSTRAINT pk_identite_joueur
-		PRIMARY KEY (puuid, game_id)
+		PRIMARY KEY (player_id, game_id)
 );
 
-CREATE TABLE objective_structures (
-    puuid VARCHAR,
-    game_id INTEGER,
+-- Schéma de la table game_objectives
+
+CREATE TABLE game_objectives (
+    player_id INTEGER,
+    game_id BIGINT,
     baronKills INTEGER,
     dragonKills INTEGER,
     inhibitorKills INTEGER,
@@ -257,12 +302,14 @@ CREATE TABLE objective_structures (
     dancedWithRiftHerald INTEGER,
     killsWithHelpFromEpicMonster INTEGER,
 	CONSTRAINT pk_objective_structures
-		PRIMARY KEY (puuid, game_id)
+		PRIMARY KEY (player_id, game_id)
 );
 
-CREATE TABLE perf_globale (
-    puuid VARCHAR,
-    game_id INTEGER,
+-- Schéma de la table game_performance
+
+CREATE TABLE game_performance (
+    player_id INTEGER,
+    game_id BIGINT,
     win BOOLEAN,
     timePlayed INTEGER,
     longestTimeSpentLiving INTEGER,
@@ -281,33 +328,5 @@ CREATE TABLE perf_globale (
     fullTeamTakedown INTEGER,
     perfectGame INTEGER,
 	CONSTRAINT pk_perf_globale
-		PRIMARY KEY (puuid, game_id)
-);
-
-CREATE TABLE phase_de_lane (
-    puuid VARCHAR,
-    game_id INTEGER,
-    maxCsAdvantageOnLaneOpponent REAL,
-    maxLevelLeadLaneOpponent INTEGER,
-    laningPhaseGoldExpAdvantage INTEGER,
-    earlyLaningPhaseGoldExpAdvantage INTEGER,
-    blastConeOppositeOpponentCount INTEGER,
-    fistBumpParticipation INTEGER,
-	CONSTRAINT pk_phase_de_lane
-		PRIMARY KEY (puuid, game_id)
-);
-
-CREATE TABLE soins_soutien (
-    puuid VARCHAR,
-    game_id INTEGER,
-    totalHeal INTEGER,
-    totalHealsOnTeammates INTEGER,
-    totalDamageShieldedOnTeammates INTEGER,
-    totalUnitsHealed INTEGER,
-    effectiveHealAndShielding REAL,
-    saveAllyFromDeath INTEGER,
-    killsOnRecentlyHealedByAramPack INTEGER,
-    quickCleanse INTEGER,
-	CONSTRAINT pk_soins_soutien
-		PRIMARY KEY (puuid, game_id)
+		PRIMARY KEY (player_id, game_id)
 );
