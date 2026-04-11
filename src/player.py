@@ -258,6 +258,7 @@ class TransformPlayerData:
     def select_columns(self, df_base : pd.DataFrame, champs : list[str]) -> pd.DataFrame:
         """Capture les colonnes en fonction d'une liste"""
         existing = [x for x in champs if x in df_base.columns]
+        non_exist = [x for x in existing if x not in champs]
         df_new = df_base[champs]
         return df_new
     
@@ -381,7 +382,7 @@ class PipelinesPlayer:
             bans = self.transfo.parse_bans(teams_data = match['info']['teams'])
         
             puuids = match['metadata']['participants']
-            player_map = Pipelines_db().pipeline_resolve_players(puuids)
+            player_map = self.pipe_db.pipeline_resolve_players(puuids)
 
             participants = match['info']['participants']
 

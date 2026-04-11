@@ -1,5 +1,7 @@
 # Clés à conserver ou supprimer des données de l'api riot
 
+import pandas as pd
+
 class KeysData:
 
     keys_ids = ['puuid', 'game_id']
@@ -30,7 +32,7 @@ class KeysData:
         "summonerLevel", "championId", "championName",
         "champLevel", "champExperience", "participantId", "teamId",
         "lane", "individualPosition", "teamPosition", "role",
-        "playedChampSelectPosition", "champion_ban"
+        "playedChampSelectPosition", "championBan"
     ]
 
     combat = ["player_id", "game_id",
@@ -95,7 +97,7 @@ class KeysData:
         "turretsTakenWithRiftHerald", "takedownsInAlcove",
         "takedownsInEnemyFountain", "outnumberedNexusKill",
         "hadOpenNexus", "dancedWithRiftHerald",
-        "killsWithHelpFromEpicMonster"
+        "killsWithHelpFromEpicMonster", "earliestBaron"
     ] #earliestBaron
     
     vision_communication = ["player_id", "game_id",
@@ -132,3 +134,275 @@ class KeysData:
         "lostAnInhibitor", "flawlessAces", "doubleAces",
         "acesBefore15Minutes", "fullTeamTakedown", "perfectGame"
     ]
+
+
+class KeysType:
+
+    def __init__(self):
+
+        self.key_unknown = {
+            int: pd.array([], dtype="Int64"),        # Int64 nullable (majuscule)
+            float: pd.array([], dtype="Float64"),    # Float64 nullable
+            str: pd.array([], dtype="string"),       # StringDtype
+            pd.Timestamp: pd.array([], dtype="datetime64[ns]"),
+            bool: pd.array([], dtype="boolean"),     # boolean nullable
+        }
+
+        self.key_type = {
+            # player_id_map
+            "player_id": int,
+            "puuid": str,
+
+            # gameid_playerid
+            # (player_id déjà défini)
+            "game_id": int,
+
+            # game_info
+            "match_id": str,
+            "end_of_game_result": str,
+            "game_creation": pd.Timestamp,
+            "game_duration": int,
+            "game_end": pd.Timestamp,
+            "game_start": pd.Timestamp,
+            "game_mode": str,
+            "game_name": str,
+            "game_type": str,
+            "game_version": str,
+            "map_id": int,
+            "queue_id": int,
+            "platforme_id": str,
+
+            # game_communication
+            "visionScore": int,
+            "visionScorePerMinute": float,
+            "wardsPlaced": int,
+            "wardsKilled": int,
+            "sightWardsBoughtInGame": int,
+            "visionWardsBoughtInGame": int,
+            "detectorWardsPlaced": int,
+            "allInPings": int,
+            "assistMePings": int,
+            "basicPings": int,
+            "commandPings": int,
+            "dangerPings": int,
+            "enemyMissingPings": int,
+            "enemyVisionPings": int,
+            "holdPings": int,
+            "onMyWayPings": int,
+            "getBackPings": int,
+            "pushPings": int,
+            "needVisionPings": int,
+            "retreatPings": int,
+            "visionClearedPings": int,
+            "stealthWardsPlaced": int,
+            "controlWardsPlaced": int,
+            "wardTakedowns": int,
+            "wardTakedownsBefore20M": int,
+            "wardsGuarded": int,
+            "twoWardsOneSweeperCount": int,
+            "visionScoreAdvantageLaneOpponent": float,
+
+            # game_capacites
+            "timeCCingOthers": int,
+            "totalTimeCCDealt": int,
+            "spell1Casts": int,
+            "spell2Casts": int,
+            "spell3Casts": int,
+            "spell4Casts": int,
+            "summoner1Casts": int,
+            "summoner1Id": int,
+            "summoner2Casts": int,
+            "summoner2Id": int,
+            "enemyChampionImmobilizations": int,
+            "abilityUses": int,
+            "skillshotsHit": int,
+            "skillshotsDodged": int,
+            "dodgeSkillShotsSmallWindow": int,
+            "landSkillShotsEarlyGame": int,
+
+            # game_damage
+            "totalDamageDealt": int,
+            "totalDamageDealtToChampions": int,
+            "physicalDamageDealt": int,
+            "physicalDamageDealtToChampions": int,
+            "magicDamageDealt": int,
+            "magicDamageDealtToChampions": int,
+            "trueDamageDealt": int,
+            "trueDamageDealtToChampions": int,
+            "damageSelfMitigated": int,
+            "totalDamageTaken": int,
+            "physicalDamageTaken": int,
+            "magicDamageTaken": int,
+            "trueDamageTaken": int,
+            "largestCriticalStrike": int,
+            "damagePerMinute": float,
+            "teamDamagePercentage": float,
+            "damageTakenOnTeamPercentage": float,
+            "totalHeal": int,
+            "totalHealsOnTeammates": int,
+            "totalDamageShieldedOnTeammates": int,
+            "totalUnitsHealed": int,
+            "effectiveHealAndShielding": float,
+            "saveAllyFromDeath": int,
+            "killsOnRecentlyHealedByAramPack": int,
+            "quickCleanse": int,
+
+            # game_economie
+            "goldEarned": int,
+            "goldSpent": int,
+            "itemsPurchased": int,
+            "consumablesPurchased": int,
+            "item0": int,
+            "item1": int,
+            "item2": int,
+            "item3": int,
+            "item4": int,
+            "item5": int,
+            "item6": int,
+            "goldPerMinute": float,
+
+            # game_farming
+            "neutralMinionsKilled": int,
+            "totalMinionsKilled": int,
+            "totalAllyJungleMinionsKilled": int,
+            "totalEnemyJungleMinionsKilled": int,
+            "alliedJungleMonsterKills": int,
+            "enemyJungleMonsterKills": int,
+            "jungleCsBefore10Minutes": float,
+            "scuttleCrabKills": int,
+            "initialBuffCount": int,
+            "initialCrabCount": int,
+            "junglerKillsEarlyJungle": float,
+            "voidMonsterKill": int,
+            "laneMinionsFirst10Minutes": int,
+            "moreEnemyJungleThanOpponent": float,
+            "epicMonsterKillsNearEnemyJungler": int,
+            "epicMonsterKillsWithin30SecondsOfSpawn": int,
+            "junglerTakedownsNearDamagedEpicMonster": int,
+            "buffsStolen": int,
+            "maxCsAdvantageOnLaneOpponent": float,
+            "maxLevelLeadLaneOpponent": int,
+            "laningPhaseGoldExpAdvantage": int,
+            "earlyLaningPhaseGoldExpAdvantage": int,
+            "blastConeOppositeOpponentCount": int,
+            "fistBumpParticipation": int,
+
+            # game_fight
+            "kills": int,
+            "deaths": int,
+            "assists": int,
+            "kda": float,
+            "doubleKills": int,
+            "tripleKills": int,
+            "quadraKills": int,
+            "pentaKills": int,
+            "largestMultiKill": int,
+            "largestKillingSpree": int,
+            "killingSprees": int,
+            "firstBloodKill": bool,
+            "firstBloodAssist": bool,
+            "killParticipation": float,
+            "soloKills": int,
+            "outnumberedKills": int,
+            "killAfterHiddenWithAlly": int,
+            "killsNearEnemyTurret": int,
+            "killsUnderOwnTurret": int,
+            "quickSoloKills": int,
+            "killedChampTookFullTeamDamageSurvived": int,
+            "killsOnLanersEarlyJungleAsJungler": float,
+            "multikills": int,
+            "multikillsAfterAggressiveFlash": int,
+            "multiKillOneSpell": int,
+            "legendaryCount": int,
+            "deathsByEnemyChamps": int,
+            "bountyGold": float,
+            "maxKillDeficit": int,
+            "takedowns": int,
+            "takedownsFirstXMinutes": int,
+            "takedownsAfterGainingLevelAdvantage": int,
+            "takedownsBeforeJungleMinionSpawn": int,
+            "takedownOnFirstTurret": int,
+            "pickKillWithAlly": int,
+            "immobilizeAndKillWithAlly": int,
+            "knockEnemyIntoTeamAndKill": int,
+
+            # game_player
+            "riotIdGameName": str,
+            "riotIdTagline": str,
+            "summonerId": str,
+            "summonerLevel": int,
+            "championId": int,
+            "championName": str,
+            "champLevel": int,
+            "champExperience": int,
+            "participantId": int,
+            "teamId": int,
+            "lane": str,
+            "individualPosition": str,
+            "teamPosition": str,
+            "role": str,
+            "playedChampSelectPosition": int,
+            "championBan": int,
+
+            # game_objectives
+            "baronKills": int,
+            "earliestBaron": int,
+            "dragonKills": int,
+            "inhibitorKills": int,
+            "turretKills": int,
+            "nexusKills": int,
+            "objectivesStolen": int,
+            "objectivesStolenAssists": int,
+            "damageDealtToObjectives": int,
+            "damageDealtToBuildings": int,
+            "damageDealtToEpicMonsters": int,
+            "damageDealtToTurrets": int,
+            "firstTowerKill": bool,
+            "firstTowerAssist": bool,
+            "turretTakedowns": int,
+            "nexusTakedowns": int,
+            "inhibitorTakedowns": int,
+            "turretPlatesTaken": int,
+            "baronTakedowns": int,
+            "riftHeraldTakedowns": int,
+            "dragonTakedowns": int,
+            "epicMonsterSteals": int,
+            "epicMonsterStolenWithoutSmite": int,
+            "teamBaronKills": int,
+            "teamElderDragonKills": int,
+            "teamRiftHeraldKills": int,
+            "soloBaronKills": int,
+            "elderDragonKillsWithOpposingSoul": int,
+            "elderDragonMultikills": int,
+            "perfectDragonSoulsTaken": int,
+            "kTurretsDestroyedBeforePlatesFall": int,
+            "outerTurretExecutesBefore10Minutes": int,
+            "quickFirstTurret": int,
+            "multiTurretRiftHeraldCount": int,
+            "turretsTakenWithRiftHerald": int,
+            "takedownsInAlcove": int,
+            "takedownsInEnemyFountain": int,
+            "outnumberedNexusKill": int,
+            "hadOpenNexus": int,
+            "dancedWithRiftHerald": int,
+            "killsWithHelpFromEpicMonster": int,
+
+            # game_performance
+            "win": bool,
+            "timePlayed": int,
+            "longestTimeSpentLiving": int,
+            "totalTimeSpentDead": int,
+            "gameEndedInSurrender": bool,
+            "gameEndedInEarlySurrender": bool,
+            "teamEarlySurrendered": bool,
+            "inhibitorsLost": int,
+            "nexusLost": int,
+            "turretsLost": int,
+            "eligibleForProgression": bool,
+            "lostAnInhibitor": int,
+            "flawlessAces": int,
+            "doubleAces": int,
+            "acesBefore15Minutes": int,
+            "fullTeamTakedown": int,
+            "perfectGame": int,
+        }

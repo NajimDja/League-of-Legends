@@ -262,6 +262,7 @@ CREATE TABLE game_objectives (
     player_id INTEGER,
     game_id BIGINT,
     baronKills INTEGER,
+    earliestBaron INTEGER,
     dragonKills INTEGER,
     inhibitorKills INTEGER,
     turretKills INTEGER,
