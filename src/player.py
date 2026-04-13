@@ -246,11 +246,11 @@ class TransformPlayerData:
         return {
             # Voie principale
             "id_style_primary":                 primary["style"],
-            "id_selection_style_primary":      '/'.join(primary["selections"][0]["perk"], primary["selections"][1]["perk"], 
-                                                        primary["selections"][2]["perk"], primary["selections"][3]["perk"]),          
+            "id_selection_style_primary":      '/'.join([primary["selections"][0]["perk"], primary["selections"][1]["perk"], 
+                                                        primary["selections"][2]["perk"], primary["selections"][3]["perk"]]),          
             # Voie secondaire
             "id_style_sub":                     sub["style"],
-            "id_selection_style_sub":           '/'.join(sub["selections"][0]["perk"], sub["selections"][1]["perk"])
+            "id_selection_style_sub":           '/'.join([sub["selections"][0]["perk"], sub["selections"][1]["perk"]])
         }
     
     def parse_bans(self, teams_data) -> list[dict]:
