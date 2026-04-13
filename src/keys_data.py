@@ -4,6 +4,8 @@ import pandas as pd
 
 class KeysData:
 
+    queue_ids = [400, 420, 430, 440, 480, 490]
+
     keys_ids = ['puuid', 'game_id']
 
     keys_match_info = ["endOfGameResult", "gameCreation", "gameDuration", "gameEndTimestamp", "gameId", 

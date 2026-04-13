@@ -98,10 +98,14 @@ class DataBaseGestion:
         """
         Insère les lignes du DataFrame dans la table.
         Si un conflit sur la clé primaire est détecté, met à jour les colonnes non-PK.
+        Si toutes les colonnes sont des PK (table de relation), ignore les doublons.
         Retourne le nombre de lignes affectées.
         """
         if df.empty:
             return 0
+        
+        # Remplace les NaN pandas par None (NULL en SQL)
+        df = df.astype(object).where(pd.notna(df), other=None)
 
         table = metadata.tables[table_name]
         pk_cols = {col.name for col in table.primary_key.columns}
@@ -114,10 +118,14 @@ class DataBaseGestion:
             if col.name not in pk_cols
         }
 
-        stmt = stmt.on_conflict_do_update(
-            index_elements=list(pk_cols),
-            set_=update_cols
-        )
+        # Cas d'une table de relation pure (toutes les colonnes sont PK)
+        if not update_cols:
+            stmt = stmt.on_conflict_do_nothing(index_elements=list(pk_cols))
+        else:
+            stmt = stmt.on_conflict_do_update(
+                index_elements=list(pk_cols),
+                set_=update_cols
+            )
 
         result = session.execute(stmt)
         return result.rowcount
@@ -420,7 +428,7 @@ class Pipelines_db:
         with Session(engine) as session:
             player_map = self.db.get_or_create_player_ids_bulk(session, puuids)
             session.commit()
-            print(f"\t{len(player_map)} joueurs résolus")
+            # print(f"\t{len(player_map)} joueurs résolus")
             return player_map
 
     def pipeline_insert(self, table_name : str, df_insert : pd.DataFrame):

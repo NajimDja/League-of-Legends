@@ -51,11 +51,13 @@ def main_player(gameName : str, tagLine : str):
     pipe.pipeline_upsert(table_name = "account", df_upsert = df_account)
     pipe.pipeline_upsert(table_name = "summoner", df_upsert = df_summoner)
     pipe.pipeline_upsert(table_name = "champion_mastery", df_upsert = df_champion_mastery)
-    pipe.pipeline_upsert(table_name = "challenges", df_upsert = df_challenges)
     pipe.pipeline_upsert(table_name = "queue", df_upsert = df_queue)
-    
-    for name, df in games_data.items():
+
+    for name in games_data:
+        df = games_data[name]
         pipe.pipeline_upsert(table_name=name, df_upsert=df)
+    
+    pipe.pipeline_upsert(table_name = "challenges", df_upsert = df_challenges)
 
     print("Chargement des données en base terminé.")
     print("Processus d'intégration des données d'un joueur terminé.")
@@ -81,7 +83,7 @@ if __name__ == "__main__":
 
     print(f"\n{'*'*20}\nPartie : Joueur\n{'*'*20}\n")
 
-    player_integration = str(input("Souhaitez vous intégrer un nouveau joueur [Y/N] : "))
+    player_integration = str(input("Souhaitez vous intégrer les données d'un joueur [Y/N] : "))
 
     if player_integration == "Y":
         game_name = str(input("Entrez le nom de jeu : "))
