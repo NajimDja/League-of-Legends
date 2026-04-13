@@ -5,12 +5,12 @@ CREATE TABLE player_id_map (
     puuid      VARCHAR(78) NOT NULL UNIQUE
 );
 
--- Schéma de la table gameid_puuid
+-- Schéma de la table game_player
 
-CREATE TABLE gameid_playerid (
+CREATE TABLE game_player (
     player_id INTEGER,
     game_id BIGINT,
-    CONSTRAINT pk_gameid_playerid
+    CONSTRAINT pk_game_player
         PRIMARY KEY (player_id, game_id)
 );
 
@@ -227,13 +227,13 @@ CREATE TABLE game_fight (
     pickKillWithAlly INTEGER,
     immobilizeAndKillWithAlly INTEGER,
     knockEnemyIntoTeamAndKill INTEGER,
-	CONSTRAINT pk_fight
+	CONSTRAINT pk_game_fight
 		PRIMARY KEY (player_id, game_id)
 );
 
--- Schéma de la table game_player
+-- Schéma de la table game_player_info
 
-CREATE TABLE game_player (
+CREATE TABLE game_player_info (
     player_id INTEGER,
     game_id BIGINT,
     riotIdGameName VARCHAR,
@@ -252,7 +252,7 @@ CREATE TABLE game_player (
     role VARCHAR,
     playedChampSelectPosition INTEGER,
     championBan INTEGER,
-	CONSTRAINT pk_identite_joueur
+	CONSTRAINT pk_game_player_info
 		PRIMARY KEY (player_id, game_id)
 );
 
@@ -302,7 +302,7 @@ CREATE TABLE game_objectives (
     hadOpenNexus INTEGER,
     dancedWithRiftHerald INTEGER,
     killsWithHelpFromEpicMonster INTEGER,
-	CONSTRAINT pk_objective_structures
+	CONSTRAINT pk_game_objectives
 		PRIMARY KEY (player_id, game_id)
 );
 
@@ -328,6 +328,19 @@ CREATE TABLE game_performance (
     acesBefore15Minutes INTEGER,
     fullTeamTakedown INTEGER,
     perfectGame INTEGER,
-	CONSTRAINT pk_perf_globale
+	CONSTRAINT pk_game_performance
 		PRIMARY KEY (player_id, game_id)
 );
+
+-- Schéma de la table game_runes
+
+CREATE TABLE game_runes (
+    player_id INTEGER,
+    game_id BIGINT,
+    id_style_primary INTEGER,
+    id_selection_style_primary VARCHAR,
+    id_style_sub INTEGER,
+    id_selection_style_sub VARCHAR,
+    CONSTRAINT pk_game_runes
+        PRIMARY KEY (player_id, game_id)
+)

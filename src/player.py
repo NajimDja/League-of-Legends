@@ -6,7 +6,7 @@ import os
 from dotenv import load_dotenv
 import pandas as pd
 import json
-from keys_data import KeysData
+from keys_data import KeysData, KeysType
 from db_gestion import Pipelines_db
 load_dotenv()
 
@@ -149,6 +149,10 @@ class ExtractPlayerData:
     
 
 class TransformPlayerData:
+    
+    def __init__(self):
+        self.keys_type = KeysType().key_type
+        self.keys_unknown = KeysType().key_unknown
 
     def _dict_to_list_dict(self, dico : dict) -> list[dict]:
         """Ajoute un dico à une liste"""
@@ -174,9 +178,9 @@ class TransformPlayerData:
             df[col] = pd.to_datetime(df[col], unit="ms").dt.floor("s")
         return df
     
-    def add_puuid(self, df : pd.DataFrame, puuid : str) -> pd.DataFrame:
+    def add_id(self, df : pd.DataFrame, name_id : str, id : int | str) -> pd.DataFrame:
         """Ajoute le puuid du joueur à un dataframe"""
-        df['puuid'] = puuid
+        df[name_id] = id
         return df
     
     def map_catg_with_index(self, df : pd.DataFrame, col_to_map : str, name_map :str, mapper : dict) -> pd.DataFrame:
@@ -228,22 +232,25 @@ class TransformPlayerData:
         Transforme le bloc 'perks' de l'API Riot Match v5
         en un dictionnaire plat, prêt à intégrer un DataFrame.
         """
-        styles = perks["styles"]
-        primary = next(s for s in styles if s["description"] == "primaryStyle")
-        sub = next(s for s in styles if s["description"] == "subStyle")
-
+        try:
+            styles = perks["styles"]
+            primary = next(s for s in styles if s["description"] == "primaryStyle")
+            sub = next(s for s in styles if s["description"] == "subStyle")
+        except:
+            return {
+                "id_style_primary":            "No perks",
+                "id_selection_style_primary":  "No perks",          
+                "id_style_sub":                "No perks",
+                "id_selection_style_sub":      "No perks"}
+        
         return {
             # Voie principale
-            "id_tree_primary":    primary["style"],
-            "id_primary_1":      primary["selections"][0]["perk"],
-            "id_primary_2":       primary["selections"][1]["perk"],
-            "id_primary_3":       primary["selections"][2]["perk"],
-            "id_primary_4":       primary["selections"][3]["perk"],               
-
+            "id_style_primary":                 primary["style"],
+            "id_selection_style_primary":      '/'.join(primary["selections"][0]["perk"], primary["selections"][1]["perk"], 
+                                                        primary["selections"][2]["perk"], primary["selections"][3]["perk"]),          
             # Voie secondaire
-            "id_tree_sub":        sub["style"],
-            "id_sub_1":           sub["selections"][0]["perk"],
-            "id_sub_2":           sub["selections"][1]["perk"]
+            "id_style_sub":                     sub["style"],
+            "id_selection_style_sub":           '/'.join(sub["selections"][0]["perk"], sub["selections"][1]["perk"])
         }
     
     def parse_bans(self, teams_data) -> list[dict]:
@@ -258,8 +265,12 @@ class TransformPlayerData:
     def select_columns(self, df_base : pd.DataFrame, champs : list[str]) -> pd.DataFrame:
         """Capture les colonnes en fonction d'une liste"""
         existing = [x for x in champs if x in df_base.columns]
-        non_exist = [x for x in existing if x not in champs]
-        df_new = df_base[champs]
+        non_exist = [x for x in champs if x not in df_base.columns]
+        df_new = df_base[existing]
+        for col in non_exist:
+            type_ = self.keys_type.get(col)
+            dtype = self.keys_unknown.get(type_)
+            df_new[col] = pd.array([pd.NA] * len(df_new), dtype=dtype.dtype)
         return df_new
     
 
@@ -282,7 +293,7 @@ class PipelinesPlayer:
         return df_account, puuid
 
 
-    def pipeline_summoner(self, puuid : str) -> pd.DataFrame:
+    def pipeline_summoner(self, puuid : str, player_id : int) -> pd.DataFrame:
         """Récupération et traitement des données du summoner"""
 
         print("- Récupération des données du summoner du joueur.")
@@ -292,13 +303,15 @@ class PipelinesPlayer:
                                                                           'revisionDate':'last_modif', 
                                                                           'summonerLevel':'summoner_level'})
         df_summoner = self.transfo.format_timestamp(df_summoner, cols=['last_modif'])
+        df_summoner = self.transfo.map_catg_with_index(df_summoner, col_to_map='puuid', name_map='player_id', mapper={puuid : player_id})
+        df_summoner = self.transfo.drop_col(df_summoner, cols=['puuid'])
         return df_summoner
 
 
-    def pipeline_challenges(self, puuid : str) -> pd.DataFrame:
+    def pipeline_challenges(self, puuid : str, player_id : int) -> pd.DataFrame:
         """Récupération et traitement des données de challenges"""
 
-        print("- Récupération des données d'avancement de challenges du joueur.")
+        print("- Récupération des données d'avancement des challenges du joueur.")
         df_challenges = self.extract.get_challenges_info(puuid=puuid)['challenges']
         df_challenges = self.transfo.to_dataframe(df_challenges)
         df_challenges = self.transfo.format_timestamp(df_challenges, cols = ["achievedTime"])
@@ -316,8 +329,8 @@ class PipelinesPlayer:
             chall_desc = self.transfo.add_key(dico=chall_desc, new_key_val={'challenge_id':chall_id})
             all_challenge.append(chall_desc)
             cnt += 1
-            print(f"\t- Requete challenges envoyées : {cnt}", end='\r')
-            time.sleep(1.5)
+            print(f"\t- Récupération des challenges détaillés : {cnt}", end='\r')
+            time.sleep(1.25)
         
         all_challenge = self.transfo.to_dataframe(all_challenge)
         all_challenge = self.transfo.drop_col(all_challenge, cols=['shortDescription'])
@@ -325,11 +338,12 @@ class PipelinesPlayer:
         all_challenge['name'] = [self.transfo.clean_text(txt=x, exp=r"\xa0", sub="") for x in all_challenge['name']]
         
         df = self.transfo.merge_df(df1=df_challenges, df2=all_challenge, left_key=['challenge_id'], rigth_key=['challenge_id'], how='left')
-        df = self.transfo.add_puuid(df, puuid=puuid)
+        df = self.transfo.map_catg_with_index(df, col_to_map='puuid', name_map='player_id', mapper={puuid : player_id})
+        df = self.transfo.drop_col(df, cols=['puuid'])
         return df
 
 
-    def pipeline_champion_mastery(self, puuid : str) -> pd.DataFrame:
+    def pipeline_champion_mastery(self, puuid : str, player_id : int) -> pd.DataFrame:
         """Récupération et traitement des données de maitrise des champions"""
 
         print("- Récupération des données de maîtrise de champions du joueur.")
@@ -342,10 +356,12 @@ class PipelinesPlayer:
         df_champion_mastery = self.transfo.rename_df_cols(df_champion_mastery, renamer={'championId':'champ_id', 'championLevel':'champ_level',
                                                                                 'championPoints':'champ_points', 'lastPlayTime':'last_time_played',
                                                                                 'championPointsUntilNextLevel':'points_to_next_level'})
+        df_champion_mastery = self.transfo.map_catg_with_index(df_champion_mastery, col_to_map='puuid', name_map='player_id', mapper={puuid : player_id})
+        df_champion_mastery = self.transfo.drop_col(df_champion_mastery, cols=['puuid'])
         return df_champion_mastery
     
     
-    def pipeline_queue(self, puuid : str) -> pd.DataFrame:
+    def pipeline_queue(self, puuid : str, player_id : int) -> pd.DataFrame:
         """Récupération et traitement des données de ranked"""
 
         print("- Récupération des données de queue (ranked)")
@@ -353,6 +369,8 @@ class PipelinesPlayer:
         df_queue = self.transfo.to_dataframe(df_queue)
         df_queue = self.transfo.drop_col(df_queue, cols=['veteran', 'inactive', 'freshBlood', 'hotStreak'])
         df_queue = self.transfo.rename_df_cols(df_queue, renamer={'leagueId':'league_id', 'queueType':'queue_type', 'leaguePoints':'league_points'})
+        df_queue = self.transfo.map_catg_with_index(df_queue, col_to_map='puuid', name_map='player_id', mapper={puuid : player_id})
+        df_queue = self.transfo.drop_col(df_queue, cols=['puuid'])
         return df_queue
     
 
@@ -367,6 +385,8 @@ class PipelinesPlayer:
         df_participant_perks = []
         df_game_info = []
         df_relation_gameid_playerid = []
+        cnt = 0
+        total = len(list_id_games)
 
         for id in list_id_games:
             
@@ -408,6 +428,10 @@ class PipelinesPlayer:
                 df_participant_challenge.append(participant_challenge)
                 df_participant_perks.append(participant_perks)
                 df_relation_gameid_playerid.append({'player_id' : player_id, 'game_id': game_id})
+            
+            cnt += 1
+            prct = round((cnt/total)*100, 2)
+            print(f"\tNombre de game récupérées et traitées {cnt}/{total} ({prct}%)", end = '\r')
 
 
         df_participant_data = self.transfo.to_dataframe(df_participant_data)
@@ -422,6 +446,8 @@ class PipelinesPlayer:
         table_game_info = self.transfo.to_dataframe(df_game_info)
         table_idgame_playerid = self.transfo.to_dataframe(df_relation_gameid_playerid)
 
+        table_game_info = self.transfo.format_timestamp(table_game_info, cols=['game_creation', 'game_end', 'game_start'])
+
         table_communication = self.transfo.select_columns(df_all_game_data, champs=self.keys.vision_communication)
         table_identite_joueur = self.transfo.select_columns(df_all_game_data, champs=self.keys.identite_joueur)
         table_economie_items = self.transfo.select_columns(df_all_game_data, champs=self.keys.economie_items)
@@ -432,29 +458,38 @@ class PipelinesPlayer:
         table_objective_structures = self.transfo.select_columns(df_all_game_data, champs=self.keys.objectifs_structures)
         table_perf_globale = self.transfo.select_columns(df_all_game_data, champs=self.keys.performance_globale)
 
-        return [table_game_info, 
-                table_participant_perks, 
-                table_idgame_playerid, 
-                table_communication, 
-                table_identite_joueur, 
-                table_economie_items, 
-                table_cc_capacites, 
-                table_figth, 
-                table_damage, 
-                table_farming, 
-                table_objective_structures, 
-                table_perf_globale]
+        return {"game_info" : table_game_info, 
+                "game_runes" : table_participant_perks, 
+                "game_player" : table_idgame_playerid, 
+                "game_communication": table_communication, 
+                "game_player_info" : table_identite_joueur, 
+                "game_economie" : table_economie_items, 
+                "game_capacites" : table_cc_capacites, 
+                "game_figth" : table_figth, 
+                "game_damage" : table_damage, 
+                "game_farming" : table_farming, 
+                "game_objectives" : table_objective_structures, 
+                "game_performance" : table_perf_globale}
     
 
 def pipeline_new_player(gameName : str, tagLine : str):
     """Insérer un nouveau joueur en base."""
     
     pipe = PipelinesPlayer()
+    pipe_db = Pipelines_db()
 
     df_account, puuid = pipe.pipeline_account(gameName=gameName, tagLine=tagLine)
-    df_summoner = pipe.pipeline_summoner(puuid=puuid)
-    df_challenges = pipe.pipeline_challenges(puuid=puuid)
-    df_champion_mastery = pipe.pipeline_champion_mastery(puuid=puuid)
-    df_queue = pipe.pipeline_queue(puuid=puuid)
 
-    return df_account, df_summoner, df_challenges, df_champion_mastery, df_queue
+    player_id = pipe_db.pipeline_resolve_players(puuids=[puuid])
+    player_id = player_id.get(puuid)
+
+    df_account['player_id'] = player_id
+
+    games_data = pipe.pipeline_games(puuid=puuid)
+
+    df_summoner = pipe.pipeline_summoner(puuid=puuid, player_id = player_id)
+    df_challenges = pipe.pipeline_challenges(puuid=puuid, player_id=player_id)
+    df_champion_mastery = pipe.pipeline_champion_mastery(puuid=puuid, player_id=player_id)
+    df_queue = pipe.pipeline_queue(puuid=puuid, player_id=player_id)
+
+    return df_account, games_data, df_summoner, df_challenges, df_champion_mastery, df_queue
