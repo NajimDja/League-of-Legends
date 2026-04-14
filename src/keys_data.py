@@ -137,6 +137,14 @@ class KeysData:
         "acesBefore15Minutes", "fullTeamTakedown", "perfectGame"
     ]
 
+    queue = ['player_id', 'league_id','queue_type', 'tier', 'rank',
+             'league_points', 'wins', 'losses']
+    
+    challenges = ['player_id', 'challenge_id', 'percentile', 'level', 'level_index',
+                  'value', 'achieved_time', 'description', 'name']
+    
+    champion_mastery = ['player_id', 'champ_id', 'champ_level', 'champ_points',
+                        'last_time_played', 'points_to_next_level']
 
 class KeysType:
 

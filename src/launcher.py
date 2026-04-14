@@ -65,30 +65,43 @@ def main_player(gameName : str, tagLine : str):
 
 if __name__ == "__main__":
     
-    print("Lancement du processus de récupération, traitement et chargement des données en base.\n")
+    # print("Lancement du processus de récupération, traitement et chargement des données en base.\n")
 
-    print(f"{'*'*20}\nPartie : Champions\n{'*'*20}\n")
+    # print(f"{'*'*20}\nPartie : Champions\n{'*'*20}\n")
 
-    ingestion = str(input("Lancer le pipeline d'ingestion de nouvelles données [Y/N] : "))
+    # ingestion = str(input("Lancer le pipeline d'ingestion de nouvelles données [Y/N] : "))
 
-    if ingestion == "Y":
-        v = int(input("Quelle version est à récupérer [0 -> dernière, 1 -> avant dernière...] : "))
-        main_ddragon(version=v)
+    # if ingestion == "Y":
+    #     v = int(input("Quelle version est à récupérer [0 -> dernière, 1 -> avant dernière...] : "))
+    #     main_ddragon(version=v)
     
-    update_patch = str(input("Mettre à jour la table patch (is_latest) [Y/N] : "))
-    if update_patch == "Y":
-        Pipelines_db().pipeline_update_patch()
-        print("MAJ terminée.")
+    # update_patch = str(input("Mettre à jour la table patch (is_latest) [Y/N] : "))
+    # if update_patch == "Y":
+    #     Pipelines_db().pipeline_update_patch()
+    #     print("MAJ terminée.")
 
 
     print(f"\n{'*'*20}\nPartie : Joueur\n{'*'*20}\n")
 
-    player_integration = str(input("Souhaitez vous intégrer les données d'un joueur [Y/N] : "))
+    # player_integration = str(input("Souhaitez vous intégrer les données d'un joueur [Y/N] : "))
 
-    if player_integration == "Y":
-        game_name = str(input("Entrez le nom de jeu : "))
-        tag_line = str(input("Entrez le tagline (#...) : "))
-        main_player(gameName=game_name, tagLine=tag_line)
+    # if player_integration == "Y":
+    #     game_name = str(input("Entrez le nom de jeu : "))
+    #     tag_line = str(input("Entrez le tagline (#...) : "))
+    #     main_player(gameName=game_name, tagLine=tag_line)
+
+    players = {'JE SUIS IVRE' : 'EUW',
+                'loulou' : '717',
+                'ParhaSan' : 'EUW',
+                'Tusked34' : 'GOAT'}
+    
+    for gamename in players:
+        try:
+            print(f"\nJoueur {gamename} #{players[gamename]}")
+            main_player(gameName=gamename, tagLine=players[gamename])
+        except Exception as e:
+            print(f"\nError processing player {gamename}: {e}\n")
+            continue
     
     
     print("Fin du processus.")

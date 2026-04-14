@@ -166,7 +166,7 @@ class TransformPlayerData:
     
     def drop_col(self, df : pd.DataFrame, cols : list) -> pd.DataFrame:
         """Enlève des colonnes du dataframe"""
-        return df.drop(columns=cols)
+        return df.drop(columns=cols, errors='ignore')
 
     def rename_df_cols(self, df : pd.DataFrame, renamer : dict) -> pd.DataFrame:
         """Rename des colonnes avec un dico {old_col_name : new_col_name}"""
@@ -275,11 +275,12 @@ class TransformPlayerData:
         existing = [x for x in champs if x in df_base.columns]
         non_exist = [x for x in champs if x not in df_base.columns]
         df_new = df_base[existing]
-        for col in non_exist:
-            # type_ = self.keys_type.get(col)
-            # dtype = self.keys_unknown.get(type_)
-            # df_new[col] = pd.array([pd.NA] * len(df_new), dtype=dtype.dtype)
-            df_new[col] = None
+        if non_exist:
+            for col in non_exist:
+                # type_ = self.keys_type.get(col)
+                # dtype = self.keys_unknown.get(type_)
+                # df_new[col] = pd.array([pd.NA] * len(df_new), dtype=dtype.dtype)
+                df_new[col] = None
         return df_new
     
 
@@ -296,6 +297,9 @@ class PipelinesPlayer:
 
         print(f"- Récupération du puuid du joueur {gameName} (#{tagLine}).")
         df_account = self.extract.get_puuid(gameName=gameName, tagLine=tagLine)
+        if 'puuid' not in df_account:
+            raise ValueError(f"Joueur '{gameName} #{tagLine}' introuvable sur l'API Riot : {df_account}")
+
         puuid = df_account['puuid']
         df_account = self.transfo.to_dataframe(data=df_account)
         df_account = self.transfo.rename_df_cols(df_account, renamer = {'gameName':'game_name', 'tagLine':'tag_line'})
@@ -348,6 +352,7 @@ class PipelinesPlayer:
         
         df = self.transfo.merge_df(df1=df_challenges, df2=all_challenge, left_key=['challenge_id'], rigth_key=['challenge_id'], how='left')
         df = self.transfo.add_id(df, name_id= 'player_id', id = player_id)
+        df = self.transfo.select_columns(df, self.keys.challenges)
         # df = self.transfo.map_catg_with_index(df, col_to_map='puuid', name_map='player_id', mapper={puuid : player_id})
         # df = self.transfo.drop_col(df, cols=['puuid'])
         return df
@@ -368,6 +373,7 @@ class PipelinesPlayer:
                                                                                 'championPointsUntilNextLevel':'points_to_next_level'})
         df_champion_mastery = self.transfo.map_catg_with_index(df_champion_mastery, col_to_map='puuid', name_map='player_id', mapper={puuid : player_id})
         df_champion_mastery = self.transfo.drop_col(df_champion_mastery, cols=['puuid'])
+        df_champion_mastery = self.transfo.select_columns(df_champion_mastery, self.keys.champion_mastery)
         return df_champion_mastery
     
     
@@ -381,6 +387,7 @@ class PipelinesPlayer:
         df_queue = self.transfo.rename_df_cols(df_queue, renamer={'leagueId':'league_id', 'queueType':'queue_type', 'leaguePoints':'league_points'})
         df_queue = self.transfo.map_catg_with_index(df_queue, col_to_map='puuid', name_map='player_id', mapper={puuid : player_id})
         df_queue = self.transfo.drop_col(df_queue, cols=['puuid'])
+        df_queue = self.transfo.select_columns(df_queue, self.keys.queue)
         return df_queue
     
 
@@ -420,8 +427,13 @@ class PipelinesPlayer:
             participants = match['info']['participants']
 
             for participant in participants:
+                
+                puuid_participant = participant.get('puuid')  # .get() au lieu de ['puuid']
+                if not puuid_participant:
+                    print(f"\tParticipant sans puuid ignoré dans la partie {id}")
+                    continue
             
-                player_id = player_map.get(participant['puuid'])
+                player_id = player_map.get(puuid_participant)
                 index_position_participant = participants.index(participant)
                 champ_id_ban = bans[index_position_participant]['championId']
 
