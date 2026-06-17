@@ -181,6 +181,9 @@ CREATE TABLE runes (
     patch_id INTEGER,
     CONSTRAINT pk_runes
         PRIMARY KEY (type_rune_id, child_rune_id)
+    CONSTRAINT fk_runes_patch
+        FOREIGN KEY (patch_id) REFERENCES patch(id)
+        ON DELETE CASCADE
 );
 
 -- Schéma de la table summoner_spells
@@ -193,4 +196,7 @@ CREATE TABLE summoner_spells (
     cooldown_burn VARCHAR,
     CONSTRAINT pk_summoner_spells
         PRIMARY KEY (summoner_spell_id, patch_id)
+    CONSTRAINT fk_summoner_spells_patch
+        FOREIGN KEY (patch_id) REFERENCES patch(id)
+        ON DELETE CASCADE
 );
